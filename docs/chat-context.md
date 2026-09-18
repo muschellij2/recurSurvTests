@@ -1,0 +1,97 @@
+# Context from the September 2026 ChatGPT analysis
+
+This file is a durable handoff for future Codex sessions. It summarizes the
+technical conclusions from the source conversation so the repository does not
+depend on access to a ChatGPT chat URL.
+
+## Original questions
+
+The project began by asking whether the recurrent cumulative-incidence methods in
+Sivadasan/Sankaran had public implementations, whether recurrent survival-curve
+tests existed in R or Python, and which methods were true analogues of the
+ordinary log-rank test. A later supplement for Zhao et al. (2020) was provided.
+
+## Main statistical conclusions
+
+There are at least three different targets that should not be conflated:
+
+1. **Marginal recurrent gap-time survival.** Wang-Chang estimates the marginal
+   survival distribution of recurrent gap times while accounting for informative
+   numbers of events. Luo & Huang (2011) give a weighted-risk-set formulation
+   that is algebraically Wang-Chang-equivalent and a rank statistic `G_rho*`.
+   At `rho = 0`, this is explicitly a recurrent gap-time log-rank analogue.
+2. **Mean cumulative recurrent-event burden over calendar time.** Functions such
+   as `mets::test_logrankRecurrent()` and methods around mean cumulative
+   functions target event accumulation, not the Wang-Chang gap-time survival
+   curve. They can be called logrank-type in their own estimand but answer a
+   different scientific question.
+3. **Cause-specific recurrent cumulative incidence.** Sivadasan/Sankaran define
+   RCIFs for recurrent competing-risk gap times. Their METRON test compares
+   cause-specific RCIFs to equality (`F_l(t) = F(t)/k` under the formulation
+   used here). It is better viewed as a weighted CIF contrast/Wald-type test than
+   as a literal log-rank analogue.
+
+## Zhao et al. (2020)
+
+Zhao Q, Zhang B, LaValley MP, Massaro JM, Lunetta KL, Chang M. *Extended Rank
+Tests for Analyzing Recurrent Event Data*. Statistics in Biopharmaceutical
+Research 12(1):90-98. DOI: 10.1080/19466315.2019.1601596.
+
+The paper's abstract states that it extends three commonly used rank tests to
+compare Wang-Chang KM-like survival estimates and handles intra-subject
+correlation with a robust variance estimator.
+
+The supplement supplied in the source conversation (`usbr_a_1601596_sm0914.docx`)
+contains simulation details, maximum event-count summaries, and comparisons of
+subject-level residual distributions. It does **not** provide R/SAS/Python code.
+It also does not contain the complete main-paper test formulas. Therefore this
+package deliberately does not claim to contain the exact Zhao test.
+
+The supplement's useful qualitative result is that the authors' new residual
+construction is much less heavy-tailed than the Jung-Jeong alternative under
+extreme within-subject heterogeneity. This supports reproducing the exact
+subject-level score/variance construction if the full paper becomes available.
+
+## Current implementations
+
+### `wc_surv()`
+Reference Wang-Chang / weighted-risk-set marginal recurrent gap-time survival
+estimator.
+
+### `wc_logrank()`
+Luo-Huang `G_rho*` two-sample recurrent gap-time rank test. `rho = 0` is the
+main log-rank analogue; `rho = 1` is the Peto-Prentice analogue.
+
+### `ss_rcif()`
+Reference recurrent cumulative-incidence estimator based on the
+Sivadasan/Sankaran papers.
+
+A known caveat is the printed 2023 Equation 15. Literal use of a cause-specific
+`m_il` denominator can make cause-specific event increments fail to sum to the
+pooled process. The package therefore defaults to `cause_weighting = "shared"`
+and provides `"literal_eq15"` as a sensitivity/reproduction option.
+
+### `ss_rcif_equal_causes_test()`
+Subject-level bootstrap Wald reconstruction of the equal-cause RCIF test. This
+should be described as a reconstruction unless validated directly against author
+code or published numerical examples.
+
+## Existing software discussed
+
+- `newTestSurvRec` includes recurrent rank tests and separately has a Wang-Chang
+  estimator, but inspection during the source analysis indicated its `LRrec`
+  pathway used a Pena-Strawderman-Hollander estimator rather than Wang-Chang.
+- archived `survrec` included a Wang-Chang estimator and quantile bootstrap
+  comparisons, not the same global curve test.
+- `mets` and `reda` include tests for mean cumulative recurrent-event functions,
+  which are useful but target a different estimand.
+
+## Recommended next development steps
+
+1. Obtain the full Zhao et al. main paper or author code and implement its exact
+   score and robust covariance in `R/zhao_rank_tests.R`.
+2. Add a K-group extension for the Luo-Huang rank statistic so diagnoses such as
+   NT1, NT2, IH, and control can be tested jointly.
+3. Create simulation tests reproducing published null size/power scenarios.
+4. Compare the resulting nonparametric tests to marginal and frailty Cox models
+   on the intended sleep-bout datasets.
