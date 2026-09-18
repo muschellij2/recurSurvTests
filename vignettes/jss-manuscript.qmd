@@ -17,22 +17,25 @@ execute:
 
 ## Abstract
 
-Recurrent-event analyses are often described using the same vocabulary while
-estimating substantively different quantities. In particular, marginal
-recurrent *gap-time* survival, calendar-time recurrent-event burden, and
-recurrent competing-risk incidence have distinct estimands and require distinct
-software. `recurSurvTests` provides transparent R reference implementations
-for (i) Wang--Chang marginal recurrent gap-time survival, (ii) the
-Pena--Strawderman--Hollander generalized product-limit estimator, (iii)
-Luo--Huang weighted-risk-set rank tests, (iv) a separately documented Zhao et
-al. extended-rank implementation and sensitivity variance, and (v)
-Sivadasan--Sankaran recurrent cause-specific cumulative-incidence functions.
-The package emphasizes explicit data conventions, estimand separation, and
-reproducible validation against prior R implementations where available. This
-manuscript documents the methods, software design, numerical reference checks,
-and a planned large-scale simulation study for polysomnography-shaped recurrent
-bout data. The latter is fully specified and reproducible but its long-running
-results are deliberately not reported until the configured simulation jobs have
+Nonparametric recurrent-event survival curves are available in the statistical
+literature, but openly available implementations of tests for differences
+between those curves have been limited. `recurSurvTests` provides R
+implementations for estimating and comparing recurrent curves on their intended
+scales: (i) Wang--Chang marginal recurrent gap-time survival and Luo--Huang
+weighted-risk-set rank tests, (ii) the
+Pena--Strawderman--Hollander generalized product-limit estimator, (iii) a
+separately documented Zhao et al. extended-rank implementation with a
+sensitivity variance path, and (iv) Sivadasan--Sankaran recurrent
+cause-specific cumulative-incidence functions and their Wald-type comparison.
+The package is designed to enable tests whose risk sets, weights, and null
+hypotheses correspond to the curve an investigator has chosen to estimate.
+Because recurrent gap-time survival, calendar-time event burden, and recurrent
+competing-risk incidence are distinct estimands, the software makes those
+choices explicit rather than treating their tests as substitutes. This
+manuscript documents the methods, data conventions, numerical checks against
+prior R implementations where available, and reproducible simulation designs
+for published-style and polysomnography-shaped settings. Long-running
+simulation results are deliberately withheld until the configured jobs have
 completed.
 
 **Keywords:** recurrent events, gap time, Wang--Chang estimator, weighted risk
@@ -48,12 +51,36 @@ quantity as another method with a similar name. This distinction is especially
 important when the number of observed recurrences is associated with a
 participant's propensity for short gaps.
 
-`recurSurvTests` was developed to make these distinctions executable. It fills
-a gap between published formulas, legacy software with partly overlapping
-implementations, and contemporary testing workflows. The package is not a
-general recurrent-event modeling framework. It provides small, inspectable
-reference implementations, with tests and vignettes designed to expose the
-assumptions that make two apparently similar analyses different.
+This distinction creates a practical inferential problem, not merely a naming
+problem. An investigator may plot a recurrent gap-time survival curve and want
+to test whether that curve differs by treatment, diagnosis, or visit. A test
+for a calendar-time mean cumulative function, a regression coefficient, or a
+first-event survival curve instead answers a different question. Thus, the
+estimand used for the curve and the estimand targeted by its comparison must be
+aligned before a reported p-value has its intended interpretation.
+
+Substantial software already supports recurrent-event regression. For example,
+the Andersen--Gill, PWP, and related Cox-model formulations provide score,
+Wald, and likelihood-based inference for regression coefficients; mixed-effects
+and frailty extensions are available in `coxme` and `frailtypack`. These are
+important tools when a conditional covariate or frailty effect is the scientific
+target. They do not, however, supply a nonparametric global test for equality
+of an estimated recurrent gap-time survival curve. Existing recurrent-curve R
+software has also made important contributions: `survrec` includes
+Wang--Chang and Pena--Strawderman--Hollander estimators, and `newTestSurvRec`
+includes recurrent-event curve estimators and rank-test procedures. Their
+available estimators and testing paths do not all target the same curve, so a
+test cannot be transferred between them solely on the basis of a shared label
+such as “recurrent survival.”
+
+`recurSurvTests` fills the resulting open-source implementation gap by enabling
+tests that correspond to the recurrent curves under analysis. It is not a
+general recurrent-event modeling framework. Its primary aim is to let users
+estimate a clearly defined recurrent curve and conduct a comparison whose risk
+set, weighting, and null hypothesis match that curve--in particular, the
+Wang--Chang marginal gap-time survival curve and its Luo--Huang weighted-risk-
+set comparison. The package also keeps alternative estimands explicit, rather
+than presenting their tests as interchangeable.
 
 Three scientific targets are kept separate throughout:
 
@@ -154,6 +181,77 @@ $\widehat S_{PSH}(t)^2\sum_{u\leq t}dN(u)/R(u)^2$. It is not generally
 appropriate when within-subject gaps are dependent or event counts are
 informative. In such settings, clustered uncertainty methods are needed; a
 point estimator alone does not solve the inference problem.
+
+### Subject-bootstrap confidence intervals
+
+`recurrent_surv_ci()` resamples complete participant histories and refits
+either curve. This is required because recurrent gaps from one participant are
+dependent, and because the WC weights are functions of the complete history.
+The default percentile intervals are pointwise: at a pre-specified time $t$,
+they target $P\{S(t)\in CI(t)\}=1-\alpha$. They are the conventional
+uncertainty summary for a plotted curve, but do not support a joint claim about
+every point of the curve. For that purpose,
+`interval = "simultaneous"` uses a subject-bootstrap max-$t$ critical value to
+form a band over an explicitly supplied finite time grid. The associated
+coverage simulation estimates pointwise and joint coverage separately; its
+results remain pending until the configured run has completed.
+
+The default number of bootstrap draws is $B=999$, consistent with common
+bootstrap and permutation practice. It is adequate for routine exploration,
+but a two-sided 95% percentile interval estimates each 2.5% tail from only
+about 25 draws. For final 95% percentile limits or max-$t$ critical values,
+the documentation recommends $B\geq 2000$ when computation permits, yielding
+about 50 draws in each percentile tail and reducing Monte-Carlo variation.
+
+The coverage statement must match the reported quantity. A pointwise 95%
+interval has approximately 95% coverage for $S(t_0)$ at one pre-specified gap
+time $t_0$. Drawing such intervals at multiple times does not yield 95% joint
+coverage of the full curve. The simultaneous max-$t$ band instead targets
+$P\{S(t)\ \text{is covered for every }t\in\mathcal T\}\approx 0.95$ for the
+user-supplied finite grid $\mathcal T$; it is correspondingly wider. Neither
+output is a confidence interval for a survival quantile (an inverse-curve
+parameter such as a median gap) or for a between-group curve difference.
+Those are separate targets. `recurrent_surv_quantile_ci()` provides a
+whole-subject bootstrap percentile interval for a survival quantile; it does
+not invert the independence-style normal curve limits because that inversion
+does not account for within-subject clustering. A between-group quantile or
+curve-difference interval requires its own two-group cluster-resampling
+contrast. `recurrent_surv_contrast_ci()` now supplies the latter for
+pointwise differences, ratios, or log-ratios and for a finite-grid simultaneous
+band, resampling within independent arms or complete paired-visit clusters.
+`recurrent_surv_rmst_ci()` supplies a clustered bootstrap interval for the
+restricted mean gap time, which remains defined when the median is not reached.
+
+This interface complements, rather than replaces, prior software. The
+`survrec` WC and PSH fitters return pointwise standard errors, and its plotting
+method draws normal-approximation pointwise limits. `survrec::survdiffr()` also
+performs WC or PSH bootstrap resampling for a *selected survival quantile*,
+such as a median, and returns a `boot` object for subsequent interval
+calculation. Thus bootstrap inference was not absent from earlier R work.
+The standard errors returned by the inspected `newTestSurvRec` WC and PSH
+fitters are the independence-style Nelson--Aalen/Greenwood approximation,
+
+$$
+\widehat{\mathrm{SE}}\{\widehat S(t)\}=
+\widehat S(t)\left\{\sum_{u\leq t}\frac{dN(u)}{R(u)^2}\right\}^{1/2}.
+$$
+
+Consequently, those values can be used to form a clipped normal pointwise
+curve interval, $\widehat S(t)\mathbin{\pm}z_{1-\alpha/2}\widehat{SE}(t)$;
+they are neither bootstrap intervals nor simultaneous bands. The same
+independence-style form, evaluated with this package's own event and risk
+increments, is available with `ci_method = "normal"` to make the legacy-style
+capability explicit. It reproduces the PSH standard-error calculation on the
+same long records; for WC it is an analogous approximation for the
+Wang--Chang-equivalent weighted risk set, not a claim of numerical replication
+of another package's variance code. It should not be relied on for dependent
+recurrent gaps or informative event counts, because the displayed variance does
+not account for subject-level clustering. In contrast,
+`ci_method = "bootstrap"` provides a whole-curve subject-bootstrap workflow:
+percentile intervals for fixed times or a max-$t$ band for a finite grid. The
+resampling itself is conceptually straightforward; its value here is a uniform
+analyst-facing tool that makes the resampling unit, estimator, time grid, and
+coverage claim explicit and consistent across WC and PSH analyses.
 
 ### Comparing curves
 
@@ -332,3 +430,16 @@ function. *Journal of the American Statistical Association*, 94, 146--153.
 Zhao Q, Zhang B, LaValley MP, Massaro JM, Lunetta KL, Chang M (2020). Extended
 rank tests for analyzing recurrent event data. *Statistics in Biopharmaceutical
 Research*, 12, 90--98. doi:10.1080/19466315.2019.1601596.
+
+Gonzalez JR, Pena EA, Strawderman RL (2018). *survrec: Survival Analysis for
+Recurrent Event Data*. R package.
+
+Manrique CMM (2018). *newTestSurvRec: Statistical Tests to Compare Curves with
+Recurrent Events*. R package.
+
+Therneau TM (2024). *coxme: Mixed Effects Cox Models*. R package.
+
+Rondeau V, Mazroui Y, Gonzalez JR (2012). frailtypack: An R package for the
+analysis of correlated survival data with frailty models using penalized
+likelihood estimation or parametrical estimation. *Journal of Statistical
+Software*, 47(4), 1--28. doi:10.18637/jss.v047.i04.

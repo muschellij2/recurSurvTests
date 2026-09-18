@@ -3,9 +3,11 @@
 if (Sys.getenv("RUN_PSG_VALIDATION") != "true") stop("Set RUN_PSG_VALIDATION=true to run.")
 if (!requireNamespace("devtools", quietly = TRUE)) stop("Install devtools first.")
 devtools::load_all(".", quiet = TRUE)
-n_sim <- as.integer(Sys.getenv("PSG_N_SIM", "1000"))
+n_total <- as.integer(Sys.getenv("PSG_N_SIM", "1000"))
+task_id <- as.integer(Sys.getenv("PSG_TASK_ID", "1")); n_tasks <- as.integer(Sys.getenv("PSG_N_TASKS", "1"))
+n_sim <- ceiling(n_total / n_tasks)
 B <- as.integer(Sys.getenv("PSG_B", "999"))
-set.seed(as.integer(Sys.getenv("PSG_SEED", "20260922")))
+set.seed(as.integer(Sys.getenv("PSG_SEED", "20260922")) + task_id - 1L)
 
 # A visit has shared frailty, a visit effect, persistent burst/recovery states,
 # unequal 360--480 minute recording duration, and a terminal censored gap.
@@ -60,9 +62,10 @@ result <- do.call(rbind, lapply(seq_len(nrow(scenario)), function(i) {
   data.frame(design = s$design, alternative = s$alternative, method = names(rate),
     rejection_rate = unname(rate), monte_carlo_se = sqrt(rate * (1 - rate) / n_sim), n_sim = n_sim, B = B)
 }))
-saveRDS(result, "data-raw/psg-validation-results.rds")
-utils::write.csv(result, "data-raw/psg-validation-results.csv", row.names = FALSE)
-grDevices::png("data-raw/psg-validation-rejection-rates.png", 1400, 800)
+suffix <- if (n_tasks > 1L) paste0("-task", task_id) else ""
+saveRDS(result, paste0("data-raw/psg-validation-results", suffix, ".rds"))
+utils::write.csv(result, paste0("data-raw/psg-validation-results", suffix, ".csv"), row.names = FALSE)
+grDevices::png(paste0("data-raw/psg-validation-rejection-rates", suffix, ".png"), 1400, 800)
 graphics::barplot(result$rejection_rate, names.arg = paste(result$design, result$alternative, result$method, sep = "\n"),
   las = 2, ylim = c(0, 1), ylab = "Rejection rate", main = "PSG-shaped recurrent gap-time simulation")
 graphics::abline(h = .05, lty = 2, col = "firebrick")

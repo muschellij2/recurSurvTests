@@ -1,0 +1,200 @@
+---
+title: "Subject-bootstrap confidence intervals for recurrent survival curves"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Subject-bootstrap confidence intervals for recurrent survival curves}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+library(recurSurvTests)
+```
+
+`recurrent_surv_ci()` supplies subject-level bootstrap uncertainty intervals
+for the Wang--Chang (WC) marginal gap-time curve and the
+Pena--Strawderman--Hollander (PSH) curve. The resampling unit is the complete
+participant history. Resampling individual rows would incorrectly regard a
+participant's recurrent gaps as independent and, for WC, would break the
+subject-specific event-count weights.
+
+## Relationship to earlier R implementations
+
+Earlier R software provides valuable, but different, uncertainty tools.
+`survrec::wc.fit()` and `survrec::psh.fit()` return pointwise standard errors;
+the associated plotting method uses them to draw normal-approximation
+pointwise limits. `survrec::survdiffr()` additionally creates WC or PSH
+bootstrap replicates for a selected survival quantile and returns a `boot`
+object, from which users can request a quantile confidence interval. Therefore
+the present function does not introduce subject bootstrap resampling as a new
+statistical idea. Instead, it makes full-curve subject bootstrap intervals
+available with the same call for WC and PSH, states whether the result is
+pointwise or simultaneous, and returns the fitted curve and limits in a common
+format. The inspected `newTestSurvRec` WC and PSH fitters provide standard
+errors but no exported bootstrap interface.
+
+Those legacy standard errors use the independence-style
+Nelson--Aalen/Greenwood calculation
+
+$$
+\widehat{\mathrm{SE}}\{\widehat S(t)\} =
+\widehat S(t)\left\{\sum_{u\le t}dN(u)/R(u)^2\right\}^{1/2}.
+$$
+
+They can produce a normal pointwise curve CI, but they do not produce a
+simultaneous band and are not generally adequate for correlated recurrent
+gaps. `recurrent_surv_ci(..., ci_method = "normal")` exposes this calculation
+using this package's own risk increments. It reproduces the PSH calculation on
+the same long records; for WC it is an analogous weighted-risk-set
+approximation rather than a claim to reproduce another package's variance
+code. Its default subject bootstrap is preferable when participant-level
+dependence is relevant.
+
+## Pointwise intervals are the usual curve summary
+
+The default is a percentile interval at each event time. A 95% *pointwise*
+interval has approximately 95% repeated-sampling coverage at one pre-specified
+time. This is the usual uncertainty display alongside a survival curve; it does
+not mean that the full curve is covered with probability 0.95.
+
+```{r pointwise}
+gaps <- data.frame(
+  id = rep(1:12, each = 3),
+  episode = rep(1:3, 12),
+  gap = rep(c(1, 2, 4), 12) + rep(0:11, each = 3) / 10,
+  status = rep(c(1, 1, 0), 12)
+)
+
+wc_ci <- recurrent_surv_ci(
+  gaps, estimator = "wc", episode = "episode", B = 199, seed = 1
+)
+head(wc_ci$curve)
+```
+
+The returned `curve` has the estimated survival, bootstrap standard error, and
+lower and upper limits. `B = 999` or larger is recommended for analysis;
+`B = 199` only keeps this vignette quick. The default `B = 999` follows common
+bootstrap and permutation practice. For a two-sided 95% interval, however, its
+2.5% and 97.5% limits are determined by only about 25 bootstrap draws in each
+tail. Use `B = 2000` or more when stable 95% percentile limits or max-t band
+critical values are important and runtime permits.
+
+For a legacy-style normal pointwise interval, use the standard-error option.
+It is shown here for comparison, not as the default recurrent-event analysis.
+
+```{r normal-ci}
+psh_normal_ci <- recurrent_surv_ci(
+  gaps, estimator = "psh", episode = "episode", ci_method = "normal"
+)
+head(psh_normal_ci$curve)
+```
+
+## Simultaneous bands answer a different question
+
+If an analysis makes a statement about the whole displayed curve, request a
+simultaneous band. The implementation uses the bootstrap distribution of the
+largest absolute, standard-error-scaled curve deviation over the requested
+times. It therefore controls coverage jointly over that finite time grid, and
+is generally wider than pointwise intervals.
+
+```{r simultaneous}
+psh_band <- recurrent_surv_ci(
+  gaps, estimator = "psh", episode = "episode", interval = "simultaneous",
+  B = 199, seed = 1
+)
+psh_band$critical.value
+head(psh_band$curve)
+```
+
+For a band restricted to clinically meaningful gap times, pass them explicitly
+via `times`. This both specifies the scientific claim and avoids creating a
+wide band over poorly supported tail times.
+
+## Which confidence statement is being made?
+
+These intervals are not interchangeable.
+
+| Quantity | Typical output | Coverage statement |
+|---|---|---|
+| Curve ordinate at one pre-specified time, $S(t_0)$ | Default bootstrap percentile interval | About 95% coverage at $t_0$ |
+| Several separately reported curve ordinates | Pointwise intervals at each time | About 95% at each time separately; not 95% for all times together |
+| Entire curve over supplied grid $mathcal T$ | `interval = "simultaneous"` max-t band | About 95% coverage of all $S(t)$ for $t \in \mathcal T$ jointly |
+| Survival quantile, such as a median gap | `recurrent_surv_quantile_ci()` subject-bootstrap interval | Coverage for an inverse-curve quantity, not for $S(t)$ |
+| Difference between two group curves | Not returned by `recurrent_surv_ci()` | Requires a two-group, cluster-resampling design and a specified contrast |
+
+The normal-SE option is only a pointwise approximation. It cannot become a
+simultaneous band by drawing many normal intervals, and it can understate
+uncertainty when recurrent gaps are correlated. A simultaneous band is useful
+for a global visual or scientific claim, but its width means pointwise
+intervals are usually preferable for reporting a small number of pre-specified
+times.
+
+## Quantile statistics, including the median
+
+The median gap time is the inverse-curve statistic
+$\inf\{t:S(t)\le 0.5\}$. It has a different coverage target from a CI for the
+survival ordinate $S(t)$. `recurrent_surv_quantile_ci()` resamples complete
+participant histories, refits the selected curve, and takes percentile limits
+of the resulting median (or other quantile) estimates.
+
+```{r quantile-ci}
+median_ci <- recurrent_surv_quantile_ci(
+  gaps, estimator = "wc", episode = "episode", survival_prob = 0.5,
+  B = 199, seed = 1
+)
+median_ci[c("estimate", "lower", "upper")]
+```
+
+The function deliberately does not invert the normal/Greenwood curve limits
+for this purpose: those limits do not account for clustered recurrent gaps.
+
+## Restricted means and two-group contrasts
+
+When the curve does not reach 0.5, the restricted mean gap time
+$\int_0^\tau S(t)dt$ remains defined. It and its subject-bootstrap interval are
+available through `recurrent_surv_rmst_ci()`.
+
+```{r rmst}
+recurrent_surv_rmst_ci(gaps, estimator = "wc", episode = "episode",
+                       tau = 3, B = 199, seed = 1)
+```
+
+For independent treatment arms, `recurrent_surv_contrast_ci()` resamples
+subjects within arm; supplying `pair` instead resamples complete paired visit
+clusters. It provides pointwise differences, ratios, or log-ratios, and a
+simultaneous band when requested. These are curve-difference estimands, not the
+rank-test statistic.
+
+```{r contrast}
+gaps$arm <- rep(c("control", "treatment"), each = 18)
+contrast_ci <- recurrent_surv_contrast_ci(
+  gaps, group = "arm", estimator = "wc", episode = "episode",
+  contrast = "difference", B = 199, seed = 1
+)
+plot_recurrent_surv_ci(wc_ci)
+```
+
+## Coverage check
+
+`data-raw/curve-ci-coverage-simulation.R` is an opt-in simulation runner. It
+generates recurrent histories with administrative terminal censoring and
+unequal observed event counts, obtains a large-population reference curve for
+each estimator, and evaluates pointwise and joint coverage separately. The
+large-population reference is intentional: under terminal-gap recurrent data,
+the pooled PSH curve need not target an IID exponential gap survival function.
+
+```{r coverage, eval=FALSE}
+Sys.setenv(RUN_CURVE_CI_COVERAGE = "true", CURVE_CI_N_SIM = "1000",
+           CURVE_CI_B = "999")
+source("data-raw/curve-ci-coverage-simulation.R")
+
+out <- readRDS("data-raw/curve-ci-coverage-results.rds")
+out$pointwise
+out$simultaneous
+```
+
+The standard analysis should report pointwise intervals for fixed-time curve
+estimates and use simultaneous bands only when making a joint, whole-curve
+claim. The simulation output must be reviewed with Monte-Carlo standard errors
+before claiming nominal coverage for a chosen setting.

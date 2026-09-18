@@ -72,7 +72,9 @@ not intended to reproduce the paper's 100,000-replicate tables during a
 routine package test.
 }
 \examples{
+\donttest{
 zhao_rank_simulation(n_sim = 100, n_per_group = 50, seed = 1)
+}
 
 }
 \references{

@@ -47,7 +47,7 @@
 #' incidence functions of recurrent events. *Statistica*, 83(1), 3-25.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' dat <- data.frame(
 #'   id = rep(1:4, each = 3),
 #'   episode = rep(1:3, 4),

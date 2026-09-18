@@ -176,7 +176,9 @@ zhao_rank_test <- function(data, group, id = "id", gap = "gap",
 #' @references Zhao et al. (2020), Section 3 and Tables 1--3.
 #'
 #' @examples
+#' \donttest{
 #' zhao_rank_simulation(n_sim = 100, n_per_group = 50, seed = 1)
+#' }
 #'
 #' @export
 zhao_rank_simulation <- function(

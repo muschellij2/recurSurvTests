@@ -75,7 +75,7 @@ motivates integrated contrasts of \code{F_l - F/k}, while the covariance here is
 estimated transparently by subject-level bootstrap.
 }
 \examples{
-\dontrun{
+\donttest{
 dat <- data.frame(
   id = rep(1:4, each = 3),
   episode = rep(1:3, 4),
