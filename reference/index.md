@@ -11,3 +11,7 @@
   : Luo-Huang weighted recurrent gap-time rank test
 - [`wc_surv()`](https://muschellij2.github.io/recurSurvTests/reference/wc_surv.md)
   : Wang-Chang weighted-risk-set recurrent gap-time survival estimator
+- [`zhao_rank_simulation()`](https://muschellij2.github.io/recurSurvTests/reference/zhao_rank_simulation.md)
+  : Simulate Zhao et al. null-size experiments
+- [`zhao_rank_test()`](https://muschellij2.github.io/recurSurvTests/reference/zhao_rank_test.md)
+  : Zhao et al. extended recurrent gap-time rank test

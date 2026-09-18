@@ -105,6 +105,87 @@ This is Luo-Huang’s implementation, not an exact Zhao et al. (2020)
 implementation; the available Zhao supplement does not supply enough
 formulas or source code to reconstruct the latter.
 
+## Zhao extended rank tests and simulation checks
+
+[`zhao_rank_test()`](https://muschellij2.github.io/recurSurvTests/reference/zhao_rank_test.md)
+is separate from
+[`wc_logrank()`](https://muschellij2.github.io/recurSurvTests/reference/wc_logrank.md)
+and implements the extended LR, GB, and PP score construction in Zhao et
+al. (2020). Its default `variance_method = "pooled_risk"` has subject
+residuals that sum exactly to the score and is covered by the package’s
+null simulation tests. `"zhao_eq6"` follows the group-specific
+denominator printed in Equation 6 as a sensitivity/reproduction
+implementation. This distinction is explicit because the paper’s
+published numerical tables cannot be regenerated exactly without its
+original simulation software.
+
+``` r
+
+zhao_rank_test(gaps, group = "arm", episode = "episode",
+               variance_method = "pooled_risk")
+#> $method
+#> [1] "Zhao et al. extended logrank rank test"
+#> 
+#> $test
+#> [1] "logrank"
+#> 
+#> $variance_method
+#> [1] "pooled_risk"
+#> 
+#> $alternative
+#> [1] "two.sided"
+#> 
+#> $group0
+#> [1] "A"
+#> 
+#> $group1
+#> [1] "B"
+#> 
+#> $n_subjects
+#> [1] 4
+#> 
+#> $W
+#> [1] 0.4166667
+#> 
+#> $variance
+#> [1] 0.04513889
+#> 
+#> $se
+#> [1] 0.2124591
+#> 
+#> $z
+#> [1] 1.961161
+#> 
+#> $p.value
+#> [1] 0.0498602
+#> 
+#> $subject_residuals
+#>   id group score_contribution adjustment   residual
+#> 1  1     A         -0.4166667 -0.4861111 0.06944444
+#> 2  2     A         -0.2500000 -0.3611111 0.11111111
+#> 3  3     B          0.5000000  0.3750000 0.12500000
+#> 4  4     B          0.5833333  0.4722222 0.11111111
+#> 
+#> $detail
+#>   time risk risk_group1  dN   dLambda   survival weight
+#> 1    1  4.0         2.0 1.0 0.2500000 0.77880078      1
+#> 2    2  3.0         1.5 1.5 0.5000000 0.47236655      1
+#> 3    3  1.5         0.5 1.0 0.6666667 0.24252107      1
+#> 4    4  0.5         0.0 0.5 1.0000000 0.08921852      1
+```
+
+The PSG scenario treats a recording as 8 hours (480 minutes), with no
+staggered entry, and scales a chosen gap distribution to target roughly
+200 completed events per participant. Its default `Z ~ U(0.75, 1.25)`
+avoids the extreme event-count dispersion in the paper’s `U(0.1, 1.9)`
+stress scenario.
+
+``` r
+
+zhao_rank_simulation(n_sim = 1000, n_per_group = 100, scenario = "psg_200",
+                     variance_method = "pooled_risk", seed = 1)
+```
+
 ## Recurrent competing risks
 
 [`ss_rcif()`](https://muschellij2.github.io/recurSurvTests/reference/ss_rcif.md)

@@ -3,7 +3,7 @@ pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   recurrent-methods: recurrent-methods.html
-last_built: 2026-09-18T13:36Z
+last_built: 2026-09-18T14:14Z
 urls:
   reference: https://muschellij2.github.io/recurSurvTests/reference
   article: https://muschellij2.github.io/recurSurvTests/articles

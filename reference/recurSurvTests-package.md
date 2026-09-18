@@ -62,6 +62,8 @@ recurrent cumulative incidence functions. *METRON*.
 
 Useful links:
 
+- <https://muschellij2.github.io/recurSurvTests/>
+
 - <https://github.com/muschellij2/recurSurvTests>
 
 - Report bugs at <https://github.com/muschellij2/recurSurvTests/issues>

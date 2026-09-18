@@ -164,6 +164,80 @@ implementation; the available Zhao supplement does not supply enough
 formulas or source code to reconstruct the latter.</p>
 </div>
 <div class="section level2">
+<h2 id="zhao-extended-rank-tests-and-simulation-checks">Zhao extended rank tests and simulation checks<a class="anchor" aria-label="anchor" href="#zhao-extended-rank-tests-and-simulation-checks"></a>
+</h2>
+<p><code><a href="../reference/zhao_rank_test.html">zhao_rank_test()</a></code> is separate from
+<code><a href="../reference/wc_logrank.html">wc_logrank()</a></code> and implements the extended LR, GB, and PP
+score construction in Zhao et al. (2020). Its default
+<code>variance_method = "pooled_risk"</code> has subject residuals that
+sum exactly to the score and is covered by the package’s null simulation
+tests. <code>"zhao_eq6"</code> follows the group-specific denominator
+printed in Equation 6 as a sensitivity/reproduction implementation. This
+distinction is explicit because the paper’s published numerical tables
+cannot be regenerated exactly without its original simulation
+software.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/zhao_rank_test.html">zhao_rank_test</a></span><span class="op">(</span><span class="va">gaps</span>, group <span class="op">=</span> <span class="st">"arm"</span>, episode <span class="op">=</span> <span class="st">"episode"</span>,</span>
+<span>               variance_method <span class="op">=</span> <span class="st">"pooled_risk"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $method</span></span>
+<span><span class="co">#&gt; [1] "Zhao et al. extended logrank rank test"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $test</span></span>
+<span><span class="co">#&gt; [1] "logrank"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $variance_method</span></span>
+<span><span class="co">#&gt; [1] "pooled_risk"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $alternative</span></span>
+<span><span class="co">#&gt; [1] "two.sided"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $group0</span></span>
+<span><span class="co">#&gt; [1] "A"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $group1</span></span>
+<span><span class="co">#&gt; [1] "B"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $n_subjects</span></span>
+<span><span class="co">#&gt; [1] 4</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $W</span></span>
+<span><span class="co">#&gt; [1] 0.4166667</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $variance</span></span>
+<span><span class="co">#&gt; [1] 0.04513889</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $se</span></span>
+<span><span class="co">#&gt; [1] 0.2124591</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $z</span></span>
+<span><span class="co">#&gt; [1] 1.961161</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $p.value</span></span>
+<span><span class="co">#&gt; [1] 0.0498602</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $subject_residuals</span></span>
+<span><span class="co">#&gt;   id group score_contribution adjustment   residual</span></span>
+<span><span class="co">#&gt; 1  1     A         -0.4166667 -0.4861111 0.06944444</span></span>
+<span><span class="co">#&gt; 2  2     A         -0.2500000 -0.3611111 0.11111111</span></span>
+<span><span class="co">#&gt; 3  3     B          0.5000000  0.3750000 0.12500000</span></span>
+<span><span class="co">#&gt; 4  4     B          0.5833333  0.4722222 0.11111111</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $detail</span></span>
+<span><span class="co">#&gt;   time risk risk_group1  dN   dLambda   survival weight</span></span>
+<span><span class="co">#&gt; 1    1  4.0         2.0 1.0 0.2500000 0.77880078      1</span></span>
+<span><span class="co">#&gt; 2    2  3.0         1.5 1.5 0.5000000 0.47236655      1</span></span>
+<span><span class="co">#&gt; 3    3  1.5         0.5 1.0 0.6666667 0.24252107      1</span></span>
+<span><span class="co">#&gt; 4    4  0.5         0.0 0.5 1.0000000 0.08921852      1</span></span></code></pre></div>
+<p>The PSG scenario treats a recording as 8 hours (480 minutes), with no
+staggered entry, and scales a chosen gap distribution to target roughly
+200 completed events per participant. Its default
+<code>Z ~ U(0.75, 1.25)</code> avoids the extreme event-count dispersion
+in the paper’s <code>U(0.1, 1.9)</code> stress scenario.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/zhao_rank_simulation.html">zhao_rank_simulation</a></span><span class="op">(</span>n_sim <span class="op">=</span> <span class="fl">1000</span>, n_per_group <span class="op">=</span> <span class="fl">100</span>, scenario <span class="op">=</span> <span class="st">"psg_200"</span>,</span>
+<span>                     variance_method <span class="op">=</span> <span class="st">"pooled_risk"</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="recurrent-competing-risks">Recurrent competing risks<a class="anchor" aria-label="anchor" href="#recurrent-competing-risks"></a>
 </h2>
 <p><code><a href="../reference/ss_rcif.html">ss_rcif()</a></code> computes a pooled recurrent hazard and
@@ -183,7 +257,7 @@ pooled/cause increment additivity. <code>"literal_eq15"</code>
 reproduces the printed Equation 15 denominator as a sensitivity option;
 its increments can be non-additive and should be checked through
 <code>additivity_max_abs_dG</code>.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rcif</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ss_rcif.html">ss_rcif</a></span><span class="op">(</span><span class="va">gaps</span>, episode <span class="op">=</span> <span class="st">"episode"</span><span class="op">)</span></span>
 <span><span class="va">rcif</span><span class="op">$</span><span class="va">curve</span></span>
 <span><span class="co">#&gt;   time risk_mass dG_mass   dLambda   Lambda    S_left          S F_overall dG_A</span></span>
