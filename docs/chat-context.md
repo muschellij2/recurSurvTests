@@ -45,7 +45,10 @@ The supplement supplied in the source conversation (`usbr_a_1601596_sm0914.docx`
 contains simulation details, maximum event-count summaries, and comparisons of
 subject-level residual distributions. It does **not** provide R/SAS/Python code.
 It also does not contain the complete main-paper test formulas. Therefore this
-package deliberately does not claim to contain the exact Zhao test.
+package originally did not claim to contain the exact Zhao test. A later local
+copy of the full paper enabled the separate `zhao_rank_test()` implementation;
+its Equation 6 group-risk residual and a pooled-risk sensitivity residual must
+remain explicitly distinguished and checked by simulation.
 
 The supplement's useful qualitative result is that the authors' new residual
 construction is much less heavy-tailed than the Jung-Jeong alternative under
@@ -89,7 +92,9 @@ code or published numerical examples.
 ## Recommended next development steps
 
 1. Obtain the full Zhao et al. main paper or author code and implement its exact
-   score and robust covariance in `R/zhao_rank_tests.R`.
+   score and robust covariance in `R/zhao_rank_tests.R`. The full paper is now
+   available locally; author code or a published numerical benchmark is still
+   needed to resolve the Equation 6 variance convention conclusively.
 2. Add a K-group extension for the Luo-Huang rank statistic so diagnoses such as
    NT1, NT2, IH, and control can be tested jointly.
 3. Create simulation tests reproducing published null size/power scenarios.

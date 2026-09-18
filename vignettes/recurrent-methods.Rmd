@@ -89,6 +89,32 @@ This is Luo-Huang's implementation, not an exact Zhao et al. (2020)
 implementation; the available Zhao supplement does not supply enough formulas
 or source code to reconstruct the latter.
 
+## Zhao extended rank tests and simulation checks
+
+`zhao_rank_test()` is separate from `wc_logrank()` and implements the extended
+LR, GB, and PP score construction in Zhao et al. (2020). Its
+default `variance_method = "pooled_risk"` has subject residuals that sum
+exactly to the score and is covered by the package's null simulation tests.
+`"zhao_eq6"` follows the group-specific denominator printed in Equation 6 as a
+sensitivity/reproduction implementation. This distinction is explicit because
+the paper's published numerical tables cannot be regenerated exactly without
+its original simulation software.
+
+```{r zhao-rank}
+zhao_rank_test(gaps, group = "arm", episode = "episode",
+               variance_method = "pooled_risk")
+```
+
+The PSG scenario treats a recording as 8 hours (480 minutes), with no staggered
+entry, and scales a chosen gap distribution to target roughly 200 completed
+events per participant. Its default `Z ~ U(0.75, 1.25)` avoids the extreme
+event-count dispersion in the paper's `U(0.1, 1.9)` stress scenario.
+
+```{r zhao-psg, eval = FALSE}
+zhao_rank_simulation(n_sim = 1000, n_per_group = 100, scenario = "psg_200",
+                     variance_method = "pooled_risk", seed = 1)
+```
+
 ## Recurrent competing risks
 
 `ss_rcif()` computes a pooled recurrent hazard and cause-specific increments.

@@ -11,7 +11,8 @@ Authors@R: person(
 Description: Reference implementations of nonparametric methods for recurrent
     gap-time survival and recurrent competing risks. Included methods are a
     Wang-Chang / weighted-risk-set survival estimator, the Luo-Huang recurrent
-    gap-time rank test (including the rho = 0 log-rank analogue), the
+    gap-time rank test (including the rho = 0 log-rank analogue), Zhao et al.'s
+    extended recurrent gap-time rank tests and simulation diagnostics, the
     Sivadasan-Sankaran recurrent cumulative-incidence estimator, and a
     subject-bootstrap Wald reconstruction of the Sivadasan-Sankaran equal-cause
     recurrent cumulative-incidence test. The implementations are intended to be

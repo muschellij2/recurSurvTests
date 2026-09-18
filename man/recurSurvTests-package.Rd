@@ -58,6 +58,7 @@ cumulative incidence functions. \emph{METRON}. \doi{10.1007/s40300-022-00228-x}.
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://muschellij2.github.io/recurSurvTests/}
   \item \url{https://github.com/muschellij2/recurSurvTests}
   \item Report bugs at \url{https://github.com/muschellij2/recurSurvTests/issues}
 }

@@ -17,6 +17,9 @@ cause-specific cumulative incidence.
 - `wc_logrank()` implements Luo-Huang's two-sample `G_rho*` statistic. With
   `rho = 0`, it is a recurrent gap-time log-rank analogue; it is not an exact
   Zhao et al. (2020) implementation.
+- `zhao_rank_test()` separately implements Zhao et al.'s extended LR/GB/PP
+  score construction. `zhao_rank_simulation()` provides paper and PSG-like
+  null-calibration scenarios.
 - `ss_rcif()` estimates Sivadasan-Sankaran recurrent cause-specific cumulative
   incidence functions (RCIFs).
 - `ss_rcif_equal_causes_test()` is a subject-bootstrap Wald reconstruction of
