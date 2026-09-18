@@ -14,6 +14,8 @@ cause-specific cumulative incidence.
 
 - `wc_surv()` estimates Wang-Chang marginal recurrent gap-time survival using
   the equivalent Luo-Huang weighted risk set.
+- `psh_surv()` estimates the Pena-Strawderman-Hollander generalized
+  product-limit curve (the pooled gap-record Kaplan-Meier curve).
 - `wc_logrank()` implements Luo-Huang's two-sample `G_rho*` statistic. With
   `rho = 0`, it is a recurrent gap-time log-rank analogue; it is not an exact
   Zhao et al. (2020) implementation.

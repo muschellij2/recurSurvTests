@@ -4,10 +4,13 @@
 #' gap-time survival and recurrent competing-risk analyses discussed in the
 #' Wang-Chang, Luo-Huang, and Sivadasan-Sankaran papers.
 #'
-#' The package currently exposes four main functions:
+#' The package currently exposes recurrent survival, rank-test, and
+#' competing-risk reference functions:
 #'
 #' * [wc_surv()] for a Wang-Chang / weighted-risk-set marginal recurrent
 #'   gap-time survival curve.
+#' * [psh_surv()] for the Pena--Strawderman--Hollander generalized product-limit
+#'   recurrent survival curve (the pooled gap-record Kaplan--Meier curve).
 #' * [wc_logrank()] for the Luo-Huang `G_rho*` two-sample rank test; `rho = 0`
 #'   is the recurrent gap-time log-rank analogue.
 #' * [ss_rcif()] for the Sivadasan-Sankaran recurrent cumulative-incidence
@@ -32,6 +35,10 @@
 #' @references
 #' Wang MC, Chang SH (1999). Nonparametric estimation of a recurrent survival
 #' function. *Journal of the American Statistical Association*, 94, 146-153.
+#'
+#' Pena EA, Strawderman RL, Hollander M (2001). Nonparametric estimation with
+#' recurrent event data. *Journal of the American Statistical Association*, 96,
+#' 1299-1315. \doi{10.1198/016214501753381887}.
 #'
 #' Luo X, Huang CY (2011). Analysis of recurrent gap time data using the weighted
 #' risk-set method and the modified within-cluster resampling method. *Statistics

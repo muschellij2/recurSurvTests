@@ -1,0 +1,39 @@
+---
+title: "PSG-shaped simulation validation supplement"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{PSG-shaped simulation validation supplement}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Design
+
+`data-raw/psg-validation-simulations.R` simulates high-frequency recurrent
+gap records with participant frailty, visit effects, and persistent
+burst/recovery states. It therefore has clustered bouts and unequal event
+counts. Recording duration is 360--480 minutes; its final incomplete gap is
+terminally censored. Independent-arm scenarios use unequal groups (30 control,
+45 treatment), while paired-visit scenarios share participant frailty across
+the two labels.
+
+The null has equal gap distributions. Longer and shorter treatment-bout
+alternatives multiply treatment gaps by 1.25 and 0.80. The output evaluates
+Luo--Huang $G_\rho^*$ at $\rho=0$ and $\rho=1$, Zhao pooled-risk sensitivity
+analyses, and the paired within-person label-permutation procedure. The paired
+Zhao row is explicitly an unpaired sensitivity analysis; the permutation test
+is the randomization-valid paired analysis.
+
+## Producing the table and figure
+
+```{r, eval = FALSE}
+Sys.setenv(RUN_PSG_VALIDATION = "true", PSG_N_SIM = "1000", PSG_B = "999")
+source("data-raw/psg-validation-simulations.R")
+
+result <- readRDS("data-raw/psg-validation-results.rds")
+knitr::kable(result, digits = 3)
+knitr::include_graphics("data-raw/psg-validation-rejection-rates.png")
+```
+
+At a 0.05 threshold, null rows estimate type-I error and alternative rows
+estimate power. Monte-Carlo standard errors are written with the table.

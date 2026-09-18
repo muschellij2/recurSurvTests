@@ -10,6 +10,32 @@ test_that("wc_surv returns a nonincreasing survival curve", {
   expect_true(all(fit$surv >= 0 & fit$surv <= 1))
 })
 
+test_that("psh_surv is the pooled Kaplan-Meier product limit", {
+  dat <- data.frame(
+    id = rep(1:3, c(3, 2, 3)),
+    gap = c(2, 3, 4, 1, 5, 2, 4, 3),
+    status = c(1, 1, 0, 1, 0, 1, 1, 0),
+    episode = c(1, 2, 3, 1, 2, 1, 2, 3)
+  )
+  fit <- psh_surv(dat, episode = "episode")
+  expect_equal(fit$risk, c(8, 7, 5, 3))
+  expect_equal(fit$dN, c(1, 2, 1, 1))
+  expect_equal(fit$surv, cumprod(1 - fit$dN / fit$risk))
+})
+
+test_that("paired permutation swaps labels within pairs", {
+  dat <- data.frame(
+    id = rep(1:4, each = 2), pair = rep(1:2, each = 4),
+    episode = rep(1:2, 4), gap = c(2, 4, 3, 2, 1, 5, 2, 3),
+    status = rep(c(1, 0), 4), visit = rep(c("A", "B"), each = 2)
+  )
+  fit <- wc_paired_permutation(dat, pair = "pair", group = "visit",
+    episode = "episode", B = 19, seed = 1)
+  expect_equal(length(fit$permutation_z), 19)
+  expect_gte(fit$p.value, 0)
+  expect_lte(fit$p.value, 1)
+})
+
 test_that("wc_logrank returns a finite p-value on simple two-group data", {
   dat <- data.frame(
     id = rep(1:4, each = 3),
