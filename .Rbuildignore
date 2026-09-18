@@ -8,3 +8,5 @@
 ^Extended Rank Tests for Analyzing Recurrent Event Data\.pdf$
 ^doc$
 ^Meta$
+^pkgdown$
+^_pkgdown\.yml$

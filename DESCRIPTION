@@ -29,7 +29,7 @@ Suggests:
     roxygen2,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
-URL: https://github.com/muschellij2/recurSurvTests
+URL: https://muschellij2.github.io/recurSurvTests/, https://github.com/muschellij2/recurSurvTests
 BugReports: https://github.com/muschellij2/recurSurvTests/issues
 VignetteBuilder: knitr
 Config/roxygen2/version: 8.0.0

@@ -1,0 +1,5 @@
+url: https://muschellij2.github.io/recurSurvTests/
+destination: pkgdown
+
+template:
+  bootstrap: 5
