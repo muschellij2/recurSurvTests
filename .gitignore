@@ -9,3 +9,4 @@ inst/doc
 /doc/
 /Meta/
 /pkgdown/
+data-raw/slurm-logs/
