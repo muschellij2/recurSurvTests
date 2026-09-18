@@ -1,0 +1,100 @@
+# recurSurvTests
+
+[![Codecov test
+coverage](https://codecov.io/gh/muschellij2/recurSurvTests/graph/badge.svg)](https://app.codecov.io/gh/muschellij2/recurSurvTests)
+
+`recurSurvTests` provides transparent, research-oriented reference
+implementations for recurrent **gap-time** survival and recurrent
+competing-risk analyses.
+
+It deliberately separates marginal recurrent gap-time survival, mean
+cumulative recurrent-event burden over calendar time (not implemented
+here), and recurrent cause-specific cumulative incidence.
+
+## Methods
+
+- [`wc_surv()`](https://muschellij2.github.io/recurSurvTests/reference/wc_surv.md)
+  estimates Wang-Chang marginal recurrent gap-time survival using the
+  equivalent Luo-Huang weighted risk set.
+- [`wc_logrank()`](https://muschellij2.github.io/recurSurvTests/reference/wc_logrank.md)
+  implements Luo-Huang’s two-sample `G_rho*` statistic. With `rho = 0`,
+  it is a recurrent gap-time log-rank analogue; it is not an exact Zhao
+  et al. (2020) implementation.
+- [`ss_rcif()`](https://muschellij2.github.io/recurSurvTests/reference/ss_rcif.md)
+  estimates Sivadasan-Sankaran recurrent cause-specific cumulative
+  incidence functions (RCIFs).
+- [`ss_rcif_equal_causes_test()`](https://muschellij2.github.io/recurSurvTests/reference/ss_rcif_equal_causes_test.md)
+  is a subject-bootstrap Wald reconstruction of the
+  Sivadasan-Sankaran/METRON equal-cause RCIF test. It is a weighted CIF
+  contrast, not a log-rank test.
+
+## Installation
+
+``` r
+
+# install.packages("pak")
+pak::pak("muschellij2/recurSurvTests")
+```
+
+## Data convention
+
+Supply one row per observed gap, ordered within subject by `episode` (or
+already in episode order). The final row for each subject is a
+right-censored gap with `status = 0`; all prior rows have `status = 1`.
+`gap` is a duration, not a calendar time. For RCIF analyses, completed
+events additionally have `cause`.
+
+See
+[`vignette("recurrent-methods", package = "recurSurvTests")`](https://muschellij2.github.io/recurSurvTests/articles/recurrent-methods.md)
+for the estimands, formulas, implementation details, and a worked
+example.
+
+## Example
+
+``` r
+
+library(recurSurvTests)
+
+gaps <- data.frame(
+  id = rep(1:4, each = 3),
+  episode = rep(1:3, 4),
+  gap = c(2, 3, 4, 1, 4, 3, 2, 2, 5, 1, 3, 4),
+  status = rep(c(1, 1, 0), 4),
+  arm = rep(c("A", "A", "B", "B"), each = 3),
+  cause = c("A", "B", NA, "A", "A", NA, "B", "A", NA, "B", "B", NA)
+)
+
+wc_surv(gaps, episode = "episode")
+wc_logrank(gaps, group = "arm", episode = "episode", rho = 0)$p.value
+ss_rcif(gaps, episode = "episode")$curve
+```
+
+## References
+
+- Wang MC, Chang SH (1999). *JASA* 94, 146-153.
+- Luo X, Huang CY (2011). *Statistics in Medicine* 30, 301-311.
+  <https://doi.org/10.1002/sim.4074>
+- Sivadasan SM, Sankaran PG (2023). *Statistica* 83, 3-25.
+- Sivadasan SM, Sankaran PG (2022). *METRON*.
+  <https://doi.org/10.1007/s40300-022-00228-x>
+
+# Package index
+
+## All functions
+
+- [`ss_rcif()`](https://muschellij2.github.io/recurSurvTests/reference/ss_rcif.md)
+  : Sivadasan-Sankaran recurrent cumulative-incidence estimator
+- [`ss_rcif_equal_causes_test()`](https://muschellij2.github.io/recurSurvTests/reference/ss_rcif_equal_causes_test.md)
+  : Bootstrap equal-cause test for recurrent cumulative-incidence
+  functions
+- [`wc_logrank()`](https://muschellij2.github.io/recurSurvTests/reference/wc_logrank.md)
+  : Luo-Huang weighted recurrent gap-time rank test
+- [`wc_surv()`](https://muschellij2.github.io/recurSurvTests/reference/wc_surv.md)
+  : Wang-Chang weighted-risk-set recurrent gap-time survival estimator
+
+# Articles
+
+### All vignettes
+
+- [Recurrent gap-time survival and competing-risk
+  methods](https://muschellij2.github.io/recurSurvTests/articles/recurrent-methods.md):

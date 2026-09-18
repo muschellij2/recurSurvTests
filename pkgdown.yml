@@ -1,0 +1,9 @@
+pandoc: 3.8.3
+pkgdown: 2.2.1
+pkgdown_sha: ~
+articles:
+  recurrent-methods: recurrent-methods.html
+last_built: 2026-09-18T13:36Z
+urls:
+  reference: https://muschellij2.github.io/recurSurvTests/reference
+  article: https://muschellij2.github.io/recurSurvTests/articles
