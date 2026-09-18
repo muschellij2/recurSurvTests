@@ -1,2 +1,10 @@
 ^recurSurvTests\.Rproj$
 ^\.Rproj\.user$
+^README\.qmd$
+^codecov\.yml$
+^\.github$
+^AGENTS\.md$
+^docs$
+^Extended Rank Tests for Analyzing Recurrent Event Data\.pdf$
+^doc$
+^Meta$

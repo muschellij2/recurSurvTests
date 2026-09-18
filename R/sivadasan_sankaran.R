@@ -104,7 +104,7 @@ ss_rcif <- function(data, id = "id", gap = "gap", status = "status",
   nt <- length(times)
   R_i <- matrix(0, n, nt)
   dG_i <- matrix(0, n, nt)
-  dGl_i <- setNames(
+  dGl_i <- stats::setNames(
     lapply(levels, function(x) matrix(0, n, nt)),
     as.character(levels)
   )
@@ -142,7 +142,7 @@ ss_rcif <- function(data, id = "id", gap = "gap", status = "status",
   dLambda <- ifelse(risk > 0, dG / risk, 0)
   Lambda <- cumsum(dLambda)
   S <- exp(-Lambda)
-  S_left <- c(1, head(S, -1))
+  S_left <- c(1, utils::head(S, -1))
   S_use <- if (survival_side == "right") S else S_left
 
   out <- data.frame(

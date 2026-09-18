@@ -180,7 +180,7 @@ ss_rcif_equal_causes_test <- function(
     ),
     null = "F_1(t)=...=F_k(t)=F(t)/k",
     logrank_analogue = FALSE,
-    v = setNames(v, as.character(levels)),
+    v = stats::setNames(v, as.character(levels)),
     contrast = q,
     chisq = stat,
     df = pi$rank,

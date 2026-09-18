@@ -1,22 +1,44 @@
+---
+format:
+  gfm:
+    default-image-extension: ""
+---
+
+<!-- README.md is generated from README.qmd. Please edit that file -->
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
 # recurSurvTests
 
+<!-- badges: start -->
 [![Codecov test coverage](https://codecov.io/gh/muschellij2/recurSurvTests/graph/badge.svg)](https://app.codecov.io/gh/muschellij2/recurSurvTests)
+[![R-CMD-check](https://github.com/muschellij2/recurSurvTests/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/muschellij2/recurSurvTests/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
 
 `recurSurvTests` provides transparent, research-oriented reference
 implementations for recurrent **gap-time** survival and recurrent competing-risk
-analyses.
+analyses. It deliberately keeps three different scientific targets separate:
 
-It deliberately separates marginal recurrent gap-time survival, mean cumulative
-recurrent-event burden over calendar time (not implemented here), and recurrent
-cause-specific cumulative incidence.
+- marginal recurrent gap-time survival;
+- mean cumulative recurrent-event burden over calendar time (not implemented
+  here); and
+- recurrent cause-specific cumulative incidence.
 
 ## Methods
 
 - `wc_surv()` estimates Wang-Chang marginal recurrent gap-time survival using
   the equivalent Luo-Huang weighted risk set.
 - `wc_logrank()` implements Luo-Huang's two-sample `G_rho*` statistic. With
-  `rho = 0`, it is a recurrent gap-time log-rank analogue; it is not an exact
-  Zhao et al. (2020) implementation.
+  `rho = 0`, it is a recurrent gap-time log-rank analogue; it is not claimed to
+  be an exact implementation of Zhao et al. (2020).
 - `ss_rcif()` estimates Sivadasan-Sankaran recurrent cause-specific cumulative
   incidence functions (RCIFs).
 - `ss_rcif_equal_causes_test()` is a subject-bootstrap Wald reconstruction of
@@ -25,7 +47,9 @@ cause-specific cumulative incidence.
 
 ## Installation
 
-```r
+You can install the development version of recurSurvTests from [GitHub](https://github.com/) with:
+
+``` r
 # install.packages("pak")
 pak::pak("muschellij2/recurSurvTests")
 ```
@@ -42,9 +66,9 @@ estimands, formulas, implementation details, and a worked example.
 
 ## Example
 
-```r
+```{r}
+#| label: example
 library(recurSurvTests)
-
 gaps <- data.frame(
   id = rep(1:4, each = 3),
   episode = rep(1:3, 4),

@@ -1,0 +1,119 @@
+---
+title: "Recurrent gap-time survival and competing-risk methods"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Recurrent gap-time survival and competing-risk methods}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(recurSurvTests)
+```
+
+## Scope and data structure
+
+Recurrent-event methods are often described with similar language while
+targeting different quantities. This package is for **gap-time** analyses: if
+subject $i$ has observed gap durations $Y_{i1}, \ldots, Y_{im_i}$, each row of
+the input represents one such gap. The final row is the right-censored gap
+(`status = 0`); preceding rows are completed events (`status = 1`). The optional
+`episode` column specifies their within-subject ordering.
+
+This differs from a mean cumulative function, which accumulates events on a
+calendar-time scale. The RCIF functions below also use recurrent gap times, but
+target cause-specific incidence rather than a survival curve. Thus a result
+from `wc_logrank()` should not be interpreted as a test of a calendar-time mean
+cumulative function or an RCIF.
+
+```{r data}
+gaps <- data.frame(
+  id = rep(1:4, each = 3),
+  episode = rep(1:3, 4),
+  gap = c(2, 3, 4, 1, 4, 3, 2, 2, 5, 1, 3, 4),
+  status = rep(c(1, 1, 0), 4),
+  arm = rep(c("A", "A", "B", "B"), each = 3),
+  cause = c("A", "B", NA, "A", "A", NA, "B", "A", NA, "B", "B", NA)
+)
+```
+
+## Wang-Chang marginal gap-time survival
+
+Let $m_i^*$ be the number of gap records used for subject $i$ in the
+weighted-risk-set representation. At gap time $t$, the package calculates
+
+$$
+R(t) = \sum_i \frac{1}{m_i^*}\sum_j I(Y_{ij} \geq t), \qquad
+dN(t) = \sum_i \frac{1}{m_i^*}\sum_j I(Y_{ij}=t,\ \delta_{ij}=1).
+$$
+
+The estimated hazard increment is $d\widehat\Lambda(t)=dN(t)/R(t)$ and the
+Wang-Chang-equivalent survival estimate is the product
+
+$$
+\widehat S(t)=\prod_{u\leq t}\{1-d\widehat\Lambda(u)\}.
+$$
+
+In code, `.subject_records()` validates and turns long rows into one record per
+subject, `.event_grid()` finds distinct completed gap times, and
+`.wrs_components()` constructs the subject-by-time risk and event matrices.
+`wc_surv()` sums those matrices and applies the product-limit update.
+
+```{r wang-chang}
+wc_surv(gaps, episode = "episode")
+```
+
+## Luo-Huang recurrent rank test
+
+For two subject-level groups, `wc_logrank()` applies the Luo-Huang weighted
+risk-set $G_\rho^*$ statistic. At each event time it contrasts the observed
+weighted events in group 1 with its weighted risk-set expectation, using
+$w(t)=\widehat S(t-)^\rho$. `rho = 0` is the recurrent gap-time log-rank
+analogue and `rho = 1` is the Peto-Prentice analogue. The variance is formed
+from subject-level martingale-style contributions, retaining within-subject
+dependence.
+
+```{r rank-test}
+rank_fit <- wc_logrank(gaps, group = "arm", episode = "episode", rho = 0)
+rank_fit[c("method", "interpretation", "G", "se", "p.value")]
+```
+
+This is Luo-Huang's implementation, not an exact Zhao et al. (2020)
+implementation; the available Zhao supplement does not supply enough formulas
+or source code to reconstruct the latter.
+
+## Recurrent competing risks
+
+`ss_rcif()` computes a pooled recurrent hazard and cause-specific increments.
+With subject weight $a_i$, the default shared weighting uses $a_i/m_i^*$ for
+both pooled and cause-specific event processes. For cause $l$,
+
+$$
+d\widehat F_l(t)=\widehat S(t)\,
+\frac{dG_l(t)}{R(t)}, \qquad
+\widehat F_l(t)=\sum_{u\leq t}d\widehat F_l(u).
+$$
+
+The default `cause_weighting = "shared"` maintains pooled/cause increment
+additivity. `"literal_eq15"` reproduces the printed Equation 15 denominator as
+a sensitivity option; its increments can be non-additive and should be checked
+through `additivity_max_abs_dG`.
+
+```{r rcif}
+rcif <- ss_rcif(gaps, episode = "episode")
+rcif$curve
+rcif$additivity_max_abs_dG
+```
+
+The optional `ss_rcif_equal_causes_test()` integrates contrasts of
+$F_l(t)-F(t)/k$, uses Helmert contrasts, and estimates covariance by resampling
+subjects. It is a bootstrap Wald reconstruction of the METRON equal-cause RCIF
+test, not a log-rank test. For real analyses use a substantially larger `B`
+(for example, 999 or more) than would be appropriate for a quick example.

@@ -44,10 +44,10 @@
   for (ii in spl) {
     s <- d[[status]][ii]
     sid <- d[[id]][ii[1]]
-    if (tail(s, 1) != 0) {
+    if (utils::tail(s, 1) != 0) {
       stop("Subject ", sid, ": final row must have status=0")
     }
-    if (length(s) > 1 && any(head(s, -1) != 1)) {
+    if (length(s) > 1 && any(utils::head(s, -1) != 1)) {
       stop(
         "Subject ", sid,
         ": all rows before final censored gap must have status=1"

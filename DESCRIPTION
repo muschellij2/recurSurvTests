@@ -6,7 +6,7 @@ Authors@R: person(
     given = "John",
     family = "Muschelli",
     role = c("aut", "cre"),
-    email = "CHANGE-ME@example.com"
+    email = "muschellij2@gmail.com"
   )
 Description: Reference implementations of nonparametric methods for recurrent
     gap-time survival and recurrent competing risks. Included methods are a
@@ -21,12 +21,15 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
 Imports:
     stats
 Suggests:
+    knitr,
+    rmarkdown,
     roxygen2,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
-URL: https://github.com/CHANGE-ME/recurSurvTests
-BugReports: https://github.com/CHANGE-ME/recurSurvTests/issues
+URL: https://github.com/muschellij2/recurSurvTests
+BugReports: https://github.com/muschellij2/recurSurvTests/issues
+VignetteBuilder: knitr
+Config/roxygen2/version: 8.0.0
