@@ -12,3 +12,4 @@
 ^_pkgdown\.yml$
 ^data-raw$
 ^recurSurvTests/vignettes/jss-manuscript_files/libs$
+^recurSurvTests/vignettes/jss-manuscript_files$

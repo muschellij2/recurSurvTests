@@ -18,9 +18,10 @@
 # task-specific RDS result. Increase --time if your cluster is slower than the
 # benchmarked host, or lower --cpus-per-task if the partition limits cores.
 
+set +u
+source ~/.bash_profile
 set -euo pipefail
 
-source ~/.bash_profile
 cd "${SLURM_SUBMIT_DIR}"
 mkdir -p data-raw/slurm-logs
 mkdir -p data-raw/zhao-2020-table-simulations

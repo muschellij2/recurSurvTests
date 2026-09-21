@@ -1,0 +1,3 @@
+"scenario","rejection_rate","mc_se","n_sim"
+"null",0.1,0.0948683298050514,10
+"ordered",0.8,0.126491106406735,10
