@@ -16,6 +16,9 @@ here), and recurrent cause-specific cumulative incidence.
 - [`wc_surv()`](https://muschellij2.github.io/recurSurvTests/reference/wc_surv.md)
   estimates Wang-Chang marginal recurrent gap-time survival using the
   equivalent Luo-Huang weighted risk set.
+- [`psh_surv()`](https://muschellij2.github.io/recurSurvTests/reference/psh_surv.md)
+  estimates the Pena-Strawderman-Hollander generalized product-limit
+  curve (the pooled gap-record Kaplan-Meier curve).
 - [`wc_logrank()`](https://muschellij2.github.io/recurSurvTests/reference/wc_logrank.md)
   implements Luo-Huang’s two-sample `G_rho*` statistic. With `rho = 0`,
   it is a recurrent gap-time log-rank analogue; it is not an exact Zhao

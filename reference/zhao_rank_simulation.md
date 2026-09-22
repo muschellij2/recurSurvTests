@@ -111,6 +111,7 @@ Zhao et al. (2020), Section 3 and Tables 1–3.
 ## Examples
 
 ``` r
+# \donttest{
 zhao_rank_simulation(n_sim = 100, n_per_group = 50, seed = 1)
 #> $method
 #> [1] "Zhao et al. recurrent gap-time null simulation"
@@ -224,4 +225,5 @@ zhao_rank_simulation(n_sim = 100, n_per_group = 50, seed = 1)
 #> [1] 1
 #> 
 #> 
+# }
 ```

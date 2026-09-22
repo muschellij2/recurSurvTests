@@ -2,8 +2,13 @@ pandoc: 3.8.3
 pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
+  jss-manuscript: jss-manuscript.html
+  psg-validation-supplement: psg-validation-supplement.html
+  psh-reference-check: psh-reference-check.html
   recurrent-methods: recurrent-methods.html
-last_built: 2026-09-18T15:18Z
+  recurrent-survival-confidence-intervals: recurrent-survival-confidence-intervals.html
+  wang-chang-reference-check: wang-chang-reference-check.html
+last_built: 2026-09-22T01:32Z
 urls:
   reference: https://muschellij2.github.io/recurSurvTests/reference
   article: https://muschellij2.github.io/recurSurvTests/articles
