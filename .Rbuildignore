@@ -16,3 +16,4 @@
 ^vignettes/jss-manuscript\.html$
 ^vignettes/jss-manuscript\.rmarkdown$
 ^vignettes/jss-manuscript\.knit\.md$
+^plan1\.txt$
