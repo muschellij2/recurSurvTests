@@ -99,8 +99,12 @@ missing-cell accounting. The current batch uses `pooled_risk`; this is not
 validation of the printed Equation 6 convention. The report documents a
 log-logistic generator mismatch, a printed Table 2 scaling ambiguity, and
 substantial power discrepancies. These need resolution before claiming
-published-table reproduction. The generator was not modified by the reporting
-work, and the existing batch outputs were preserved.
+published-table reproduction. The paper-scenario log-logistic generator was
+subsequently corrected to `exp(4) * (U^(-1) - 1)^0.5`. Rerun task IDs
+4, 8, ..., 120; other distributions do not require rerunning for this fix.
+New array outputs carry `generator_version = "zhao_table1_loglogistic_v2"`;
+the report accepts corrected log-logistic cells while excluding legacy ones.
+Subset submissions retain `ZHAO_N_TASKS=120` regardless of array size.
 
 1. Obtain the full Zhao et al. main paper or author code and implement its exact
    score and robust covariance in `R/zhao_rank_tests.R`. The full paper is now

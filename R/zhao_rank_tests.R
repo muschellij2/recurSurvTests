@@ -294,7 +294,9 @@ zhao_rank_simulation <- function(
       exponential = stats::rexp(1, rate = exp(-4)),
       weibull = stats::rweibull(1, shape = 2, scale = exp(4)),
       lognormal = stats::rlnorm(1, meanlog = 4, sdlog = 0.5),
-      loglogistic = exp(-4) * (stats::runif(1)^(-0.5) - 1)^0.5
+      # Zhao Table 1: S(t) = 1 / (1 + (lambda*t)^(1/gamma)),
+      # lambda = exp(-4), gamma = 0.5; invert the survival function.
+      loglogistic = exp(4) * (stats::runif(1)^(-1) - 1)^0.5
     )
     return(if (is.null(time_resolution)) out else pmax(time_resolution, round(out / time_resolution) * time_resolution))
   }

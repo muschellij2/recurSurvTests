@@ -2,7 +2,7 @@
 #SBATCH --job-name=zhao2020
 #SBATCH --array=1-120%20
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=70G
+#SBATCH --mem=25G
 #SBATCH --time=12:00:00
 #SBATCH --output=data-raw/slurm-logs/zhao-%A_%a.out
 #SBATCH --error=data-raw/slurm-logs/zhao-%A_%a.err
@@ -11,6 +11,8 @@
 #
 # Submit from the package root:
 #   sbatch data-raw/zhao-2020-table-simulations.sbatch
+# Rerun only corrected log-logistic cells:
+#   sbatch --array=4-120:4%20 data-raw/zhao-2020-table-simulations.sbatch
 #
 # The 120 array tasks correspond to the 12 Table 1, 36 Table 2, and 72 Table 3
 # cells. `%20` limits the scheduler to 20 concurrent array tasks; change it to
@@ -30,7 +32,8 @@ export RUN_ZHAO_100K=true
 export ZHAO_PARALLEL=multicore
 export ZHAO_N_CORES="${SLURM_CPUS_PER_TASK}"
 export ZHAO_TASK_ID="${SLURM_ARRAY_TASK_ID}"
-export ZHAO_N_TASKS="${SLURM_ARRAY_TASK_COUNT}"
+# Keep the original partition even when submitting only a subset of task IDs.
+export ZHAO_N_TASKS=120
 export ZHAO_CHUNK_SIZE=100
 
 # Use the R installation configured on the cluster. If your site requires a

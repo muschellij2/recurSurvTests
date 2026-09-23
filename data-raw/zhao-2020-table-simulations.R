@@ -35,6 +35,14 @@ chunk_size <- as.integer(Sys.getenv("ZHAO_CHUNK_SIZE", "100"))
 
 suffix <- if (n_tasks == 1L) "" else sprintf("-task-%03d-of-%03d", task_id, n_tasks)
 outfile = paste0("data-raw/zhao-2020-table-simulations/zhao-2020-table-simulations", suffix, ".rds")
+if (file.exists(outfile)) {
+  previous <- readRDS(outfile)
+  previous_rows <- do.call(rbind, previous[c("table1", "table2", "table3")])
+  if (any(previous_rows$distribution == "loglogistic") &&
+      !identical(previous$settings$generator_version, "zhao_table1_loglogistic_v2")) {
+    stop("Legacy log-logistic output must be regenerated. Move this file to an archive directory and rerun: ", outfile)
+  }
+}
 if (!file.exists(outfile)) {
 
   if (!requireNamespace("devtools", quietly = TRUE)) stop("Install devtools to run this script.")
@@ -145,6 +153,7 @@ if (!file.exists(outfile)) {
     source = "Zhao et al. (2020), Tables 1--3",
     settings = list(n_null = n_null, n_power = n_power, n_per_group = n_per_group,
                     followup = followup, variance_method = variance_method,
+                    generator_version = "zhao_table1_loglogistic_v2",
                     parallel_mode = parallel_mode, n_cores = n_cores, task_id = task_id, n_tasks = n_tasks,
                     chunk_size = chunk_size,
                     note = "The paper used survsim::rec.ev.surv(); this package uses its own transparent gap-time generator, so exact equality is not expected."),

@@ -1,4 +1,4 @@
-# Diagnostic only: override the log-logistic draw in an isolated environment.
+# Diagnostic only: exercise the production generator in an isolated environment.
 # Does not modify package functions or saved simulation outputs.
 # From the package root on macOS:
 # /usr/bin/time -l Rscript data-raw/zhao-2020-memory-pilot.R
@@ -6,11 +6,6 @@
 # Fifteen datasets are a sizing pilot, not a worst-case memory guarantee.
 e <- new.env(parent = globalenv())
 for (f in list.files('R', pattern='[.]R$', full.names=TRUE)) sys.source(f, envir=e)
-original_draw <- e$.zhao_draw_gap
-e$.zhao_draw_gap <- function(distribution, mean_gap=NULL, time_resolution=NULL) {
- if (distribution=='loglogistic' && is.null(mean_gap)) return(exp(4)*(runif(1)^(-1)-1)^.5)
- original_draw(distribution, mean_gap, time_resolution)
-}
 set.seed(230923)
 for (h in list(low=c(.5,1.5),medium=c(.1,1.9),high=c(.01,1.99))) {
  events <- numeric(5)
