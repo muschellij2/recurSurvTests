@@ -2,7 +2,7 @@
 #SBATCH --job-name=zhao2020
 #SBATCH --array=1-120%20
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=16G
+#SBATCH --mem=20G
 #SBATCH --time=12:00:00
 #SBATCH --output=data-raw/slurm-logs/zhao-%A_%a.out
 #SBATCH --error=data-raw/slurm-logs/zhao-%A_%a.err
