@@ -1,7 +1,11 @@
 #' Restricted mean recurrent gap time with a subject-bootstrap confidence interval
 #'
-#' Estimates the area under a Wang--Chang or PSH recurrent gap-time survival
-#' curve through `tau`, and obtains a percentile confidence interval by
+#' The restricted mean survival time (RMST), here interpreted as a restricted
+#' mean recurrent gap time (RMGT), is the area under a
+#' Wang--Chang or PSH recurrent gap-time survival curve through `tau`:
+#' `integral_0^tau S(u) du`. It is the expected gap time restricted to the
+#' horizon `tau`, not the mean number of recurrent events. This function obtains
+#' a percentile confidence interval by
 #' resampling complete subject histories.
 #'
 #' @param data,id,gap,status,episode Passed to [wc_surv()] or [psh_surv()].

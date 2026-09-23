@@ -5,8 +5,8 @@
 Dear Drs. Zhao, Zhang, LaValley, Massaro, Lunetta, and Chang,
 
 I am preparing an open-source R implementation and reproducibility report for
-the extended recurrent-event rank tests in your paper, “Extended Rank Tests for
-Analyzing Recurrent Event Data” (*Statistics in Biopharmaceutical Research*,
+the extended recurrent-event rank tests in your paper, "Extended Rank Tests for
+Analyzing Recurrent Event Data" (*Statistics in Biopharmaceutical Research*,
 2020).
 
 Could you please clarify two details that affect numerical reproduction?
@@ -20,10 +20,10 @@ Could you please clarify two details that affect numerical reproduction?
    weight? Any source code or pseudocode for the subject residual and robust
    variance would be extremely helpful.
 
-2. **Table 2 scaling.** The table caption appears to indicate “(*100),” but the
+2. **Table 2 scaling.** The table caption appears to indicate "(*100)," but the
    printed values (for example 27, 25, and 26) seem consistent with percentages
-   reported as “(*1000),” giving probabilities 0.027, 0.025, and 0.026. Is
-   “*100” a typographical error, or should the printed values be divided by
+   reported as "(*1000)," giving probabilities 0.027, 0.025, and 0.026. Is
+   "*100" a typographical error, or should the printed values be divided by
    100? We currently retain the printed values and treat them as thousandths
    only as an explicitly flagged sensitivity interpretation.
 

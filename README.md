@@ -71,7 +71,7 @@ Gehan--Breslow, and Peto--Prentice weighting to Wang--Chang survival curves
 while retaining subject-level recurrent-gap dependence through robust residual
 covariance. It therefore answers a different question from a mean-function
 test, and exposes the paper's competing variance conventions for sensitivity
-analysis rather than hiding them behind a generic “recurrent log-rank” label.
+analysis rather than hiding them behind a generic "recurrent log-rank" label.
 
 ## Example
 

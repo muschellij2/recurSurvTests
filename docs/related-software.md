@@ -23,13 +23,13 @@ not as claims of algorithmic novelty.
 
 ## Ecosystem fit
 
-For a calendar-time question such as “how many events does a participant
-experience by time `t`, on average?”, use `reda::mcfDiff()` or
+For a calendar-time question such as "how many events does a participant
+experience by time `t`, on average?", use `reda::mcfDiff()` or
 `mets::recurrent_marginal()`/`mets::test_logrankRecurrent()`. These methods are
 the appropriate complements when the estimand is a marginal mean or its AUC.
-For a gap-time question such as “does the distribution of the next recurrent
+For a gap-time question such as "does the distribution of the next recurrent
 gap differ between groups after accounting for unequal numbers of observed
-gaps?”, use `wc_surv()` and `wc_logrank()` here. For competing recurrent causes,
+gaps?", use `wc_surv()` and `wc_logrank()` here. For competing recurrent causes,
 use `ss_rcif()` and its equal-cause contrast. This separation prevents calling
 every recurrent-event comparison a log-rank test when the underlying target is a
 mean function or a cause-specific incidence curve.
@@ -44,7 +44,7 @@ visible: this package exposes the pooled-risk residual convention and the
 group-specific denominator printed in Zhao's Equation 6 as separate options,
 with simulations and validation diagnostics. That transparency is valuable
 because the paper's formulas and published tables do not uniquely settle every
-implementation detail, and an apparently ordinary “recurrent log-rank” label
+implementation detail, and an apparently ordinary "recurrent log-rank" label
 can otherwise conceal a different estimand or variance calculation.
 
 Sources checked: [newTestSurvRec CRAN documentation](https://cran.r-project.org/package=newTestSurvRec),

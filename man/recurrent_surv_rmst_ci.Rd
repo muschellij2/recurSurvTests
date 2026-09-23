@@ -36,8 +36,12 @@ A list with the restricted mean \code{estimate}, percentile limits, fitted
 curve, and bootstrap diagnostics.
 }
 \description{
-Estimates the area under a Wang--Chang or PSH recurrent gap-time survival
-curve through \code{tau}, and obtains a percentile confidence interval by
+The restricted mean survival time (RMST), here interpreted as a restricted
+mean recurrent gap time (RMGT), is the area under a
+Wang--Chang or PSH recurrent gap-time survival curve through \code{tau}:
+\verb{integral_0^tau S(u) du}. It is the expected gap time restricted to the
+horizon \code{tau}, not the mean number of recurrent events. This function obtains
+a percentile confidence interval by
 resampling complete subject histories.
 }
 \details{
