@@ -3,8 +3,9 @@
 # Requires only base R for CSV/Markdown/PNG; rmarkdown + Pandoc also produce HTML.
 
 zhao_validation <- function(input = "data-raw/zhao-2020-table-simulations",
-                            output = "docs/zhao-validation") {
-  reference <- "data-raw/zhao-2020-published-tables.csv"
+                            output = "docs/zhao-validation",
+                            write_outputs = TRUE,
+                            reference = "data-raw/zhao-2020-published-tables.csv") {
   paper <- read.csv(reference, stringsAsFactors = FALSE)
   key <- function(d) paste(d$table, d$distribution, d$heterogeneity, d$test,
                            sprintf("%.8f", d$log_time_shift), sep = "/")
@@ -91,6 +92,8 @@ zhao_validation <- function(input = "data-raw/zhao-2020-table-simulations",
   d$nominal_p_holm <- NA_real_
   # Use all 36 planned Table 2 comparisons in multiplicity correction.
   d$nominal_p_holm[ix] <- p.adjust(d$nominal_p[ix], "holm", n = 36L)
+  # Manuscripts reuse the validated calculations without generating another report.
+  if (!write_outputs) return(d)
   dir.create(output, recursive = TRUE, showWarnings = FALSE)
   write.csv(d, file.path(output, "comparison.csv"), row.names = FALSE, na = "")
   manifest <- data.frame(task_id = ids, file = basename(files), md5 = unname(tools::md5sum(files)))
@@ -156,7 +159,7 @@ zhao_validation <- function(input = "data-raw/zhao-2020-table-simulations",
     "LR = log-rank, PP = Peto–Prentice, GB = Gehan–Breslow. These tests target marginal recurrent **gap-time survival**, not cumulative event burden over calendar time or recurrent cause-specific cumulative incidence.", "",
     "## Design audit", "",
     "The paper uses 100 subjects per group, study end 180, entry U(0,180), and subject gap multipliers Z drawn from U(0.5,1.5), U(0.1,1.9), or U(0.01,1.99). Tables 1–2 use 100,000 datasets per cell; Table 3 uses 10,000. Local metadata is checked against the subject count and follow-up; actual replicate counts appear below. Local seeds and the generator are different from the paper's `survsim::rec.ev.surv()` implementation. The paper also describes noninformative censoring without supplying its full generating parameters in Section 3; the local generator uses administrative censoring only. Exact design equivalence cannot be assumed.", "",
-    "For exponential, Weibull, and log-normal baseline gaps, the current source matches the distributions printed in Table 1: rate exp(-4); Weibull shape 2 and scale exp(4); and log-normal meanlog 4, sdlog 0.5. Table 3 multiplies treatment gaps by exp(0.25) or exp(0.5). For Weibull shape 2, these correctly correspond to changes of 0.5 or 1 in -log(lambda).", "",
+    "For exponential, Weibull, and log-normal baseline gaps, the current source matches the distributions printed in Table 1: rate exp(-4); Weibull shape 2 and scale exp(4), which is equivalent to lambda = exp(-8) in S(t) = exp(-lambda*t^2); and log-normal meanlog 4, sdlog 0.5. Table 3 multiplies treatment gaps by exp(0.25) or exp(0.5). For Weibull shape 2, these correctly correspond to changes of 0.5 or 1 in -log(lambda).", "",
     "**Log-logistic mismatch:** Table 1 specifies S(t) = 1 / [1 + (lambda*t)^(1/gamma)], lambda = exp(-4), gamma = 0.5. An inverse draw is `exp(4) * (U^(-1) - 1)^0.5`, with mean exp(4)*pi/2, approximately 85.76. The legacy generator used `exp(-4) * (U^(-0.5) - 1)^0.5`, with mean exp(-4)*pi/4, approximately 0.01438. Both the scale and inverse transform were incorrect. The production generator is now corrected. New outputs tagged `zhao_table1_loglogistic_v2` are eligible for comparison; unversioned log-logistic outputs remain excluded as design mismatch. Other distributions are unaffected by this correction.", "",
     "All supplied outputs in this report must share the same variance method. `pooled_risk` uses a pooled-risk residual; `zhao_eq6` is the separate group-risk residual convention printed in Equation 6. Calibration of one does not settle the validity or intended interpretation of the other.", "",
     "### Why every fourth array task can exhaust memory", "",

@@ -1,19 +1,48 @@
 ---
-title: "recurSurvTests: Reference Implementations for Recurrent Gap-Time Survival, Rank Tests, and Competing Risks"
-subtitle: "A reproducible bridge from published methods to software"
+title: "Recurrent Gap-Time Survival, Rank Tests, and Competing Risks Analysis: `recurSurvTests`"
 author:
   - name: John Muschelli
-date: last-modified
+bibliography: references.bib
+link-citations: true
 format:
   html:
     toc: true
     number-sections: true
-    embed-resources: false
+    embed-resources: true
+    code-fold: true
+  pdf:
+    pdf-engine: xelatex
+    documentclass: article
+    classoption: [12pt]
+    geometry: margin=1in
+    number-sections: false
+    keep-tex: true
+    cite-method: natbib
+    biblio-style: unsrtnat
+    natbiboptions: numbers,sort
+    include-in-header:
+      text: |
+        \usepackage{booktabs,longtable,threeparttable,lineno}
+        \renewcommand{\baselinestretch}{1.45}
+        \linenumbers
 execute:
   echo: true
   warning: false
   message: false
+  cache: false
+  error: false
 ---
+
+```{r}
+#| label: setup
+#| include: false
+here::i_am("vignettes/jss-manuscript.qmd")
+repo_root <- here::here()
+source(here::here("vignettes", "manuscript-helpers.R"))
+if (!requireNamespace("pkgload", quietly = TRUE)) stop("Install pkgload to render the checkout")
+pkgload::load_all(repo_root, quiet = TRUE)
+options(width = 100)
+```
 
 ## Abstract
 
@@ -33,10 +62,7 @@ Because recurrent gap-time survival, calendar-time event burden, and recurrent
 competing-risk incidence are distinct estimands, the software makes those
 choices explicit rather than treating their tests as substitutes. This
 manuscript documents the methods, data conventions, numerical checks against
-prior R implementations where available, and reproducible simulation designs
-for published-style and polysomnography-shaped settings. Long-running
-simulation results are deliberately withheld until the configured jobs have
-completed.
+prior R implementations where available, and reproducible simulation designs.  We provide a comparison to published tables and also show an example similar to data analysis from polysomnography sleep data analyzing sleep bouts.
 
 **Keywords:** recurrent events, gap time, Wang--Chang estimator, weighted risk
 set, product-limit estimator, competing risks, R
@@ -60,14 +86,14 @@ estimand used for the curve and the estimand targeted by its comparison must be
 aligned before a reported p-value has its intended interpretation.
 
 Substantial software already supports recurrent-event regression. For example,
-the Andersen--Gill, PWP, and related Cox-model formulations provide score,
+the Andersen--Gill [@andersen1982], PWP [@prentice1981], and related Cox-model formulations provide score,
 Wald, and likelihood-based inference for regression coefficients; mixed-effects
-and frailty extensions are available in `coxme` and `frailtypack`. These are
+and frailty extensions are available in `coxme` [@coxme] and `frailtypack` [@frailtypack]. These are
 important tools when a conditional covariate or frailty effect is the scientific
 target. They do not, however, supply a nonparametric global test for equality
 of an estimated recurrent gap-time survival curve. Existing recurrent-curve R
-software has also made important contributions: `survrec` includes
-Wang--Chang and Pena--Strawderman--Hollander estimators, and `newTestSurvRec`
+software has also made important contributions: `survrec` [@survrec] includes
+Wang--Chang and Pena--Strawderman--Hollander estimators, and `newTestSurvRec` [@newtestsurvrec]
 includes recurrent-event curve estimators and rank-test procedures. Their
 available estimators and testing paths do not all target the same curve, so a
 test cannot be transferred between them solely on the basis of a shared label
@@ -81,6 +107,29 @@ set, weighting, and null hypothesis match that curve--in particular, the
 Wang--Chang marginal gap-time survival curve and its Luo--Huang weighted-risk-
 set comparison. The package also keeps alternative estimands explicit, rather
 than presenting their tests as interchangeable.
+
+### Relationship to `newTestSurvRec::Dif.Surv.Rec()`
+
+The existence of `newTestSurvRec::Dif.Surv.Rec()` does not make the Zhao and
+Luo--Huang implementations redundant, but the functions should not be treated
+as interchangeable. A source-level inspection of `Dif.Surv.Rec()` shows the
+following distinctions:
+
+| Component | `newTestSurvRec::Dif.Surv.Rec()` | Zhao et al. (2020) / `zhao_rank_test()` |
+|---|---|---|
+| Curve/risk-set path | The function calls `survfitr(..., type = "pe")`, i.e. its displayed test path is built from the Pena--Strawderman--Hollander/GPLE-style pooled gap-record fit. The package also contains a separate Wang--Chang fitter, but that is not the estimator selected inside this function. | Uses Wang--Chang weighted risk and event masses, with each subject's eligible gaps scaled by $1/m_i^*$. |
+| Score numerator | At each pooled event time, group-1 events minus the pooled-risk expected group-1 count. | The same broad observed-minus-expected rank-test idea, but with the Wang--Chang weighted counts and the score in Equation 3. |
+| Weight families | Provides a broad family (`LRrec`, `Grec`, `TWrec`, `PPrec`, `PMrec`, `PPrrec`, `HFrec`, `CMrec`, `Mrec`). For example, `Grec` uses the total risk-set size and `TWrec` its square root. | Implements the three paper weights LR, GB, and PP. In the paper's notation these are $1$, $n/Y^*(t)$, and the pooled Wang--Chang survival estimate $S^*(t)$, respectively. Thus the label “GB” is not evidence that the `Grec` calculation is the same test. |
+| Variance | Uses an event-time variance term based on pooled and group risk-set/event counts, then sums weighted contributions. It does not use Zhao's subject residual vector. | Uses subject-level residuals from Equation 6 and the robust variance $\widehat V^* = \sum_i \hat\epsilon_i^{*2}$ in Equation 7. The pooled-risk and group-specific Equation 6 conventions are retained separately here. |
+| Output interpretation | A family of recurrent-curve tests whose default curve path is PSH/GPLE-style. | A test of equality of Wang--Chang marginal recurrent gap-time survival distributions, with a paper-specific robust variance construction. |
+
+Consequently, `Dif.Surv.Rec(type = "LRrec")` is a useful historical recurrent
+curve rank test and an important reference comparison, but it is not an exact
+implementation of Zhao's Equation 3--7 construction. In particular, matching
+the word “log-rank” does not resolve the curve estimator, event weighting, or
+within-subject variance choice. The manuscript's numerical checks therefore
+compare the curve estimators separately and do not use `Dif.Surv.Rec()` as a
+validation oracle for `zhao_rank_test()`.
 
 Three scientific targets are kept separate throughout:
 
@@ -106,7 +155,6 @@ no completed recurrence to contribute a single terminal censored gap.
 
 ```{r}
 #| label: data-example
-#| eval: false
 library(recurSurvTests)
 
 gaps <- data.frame(
@@ -131,7 +179,7 @@ to make formula-to-code comparison possible.
 
 Let $m_i^*=1$ for a participant with no complete recurrence and otherwise let
 $m_i^*$ equal the number of completed gaps. The Wang--Chang weighted risk and
-event increments are
+event increments [@wang1999; @luo2011] are
 
 $$
 R_{WC}(t)=\sum_i\frac{1}{m_i^*}\sum_{j=1}^{m_i^*} I(Y_{ij}\geq t),
@@ -149,12 +197,13 @@ $$
 
 The inverse-$m_i^*$ weighting prevents participants with many observed events
 from receiving proportionally more influence on the marginal gap distribution.
-The implementation uses the weighted-risk-set representation shown by Luo and
-Huang to be algebraically equivalent to Wang--Chang.
+The implementation uses the weighted-risk-set representation shown by
+@luo2011 to be algebraically equivalent to the estimator of @wang1999.
 
 ### PSH and pooled Kaplan--Meier
 
-The Pena--Strawderman--Hollander (PSH) generalized product-limit estimator uses
+The Pena--Strawderman--Hollander (PSH) generalized product-limit estimator
+[@pena2001] uses
 all observed gap records with unit weight:
 
 $$
@@ -174,6 +223,21 @@ They can appear to differ only if “KM” refers to a different data constructi
 for example first gaps only, a calendar-time analysis, different treatment of
 terminal censoring, or weights. PSH has a renewal/IID gap-model interpretation;
 that interpretation is distinct from the Wang--Chang marginal estimand.
+
+In practice, PSH is most defensible when the scientific target is the
+distribution of an exchangeable/IID inter-occurrence time under a renewal model
+(with independent censoring), or when a pooled gap-record curve is being shown
+explicitly as a descriptive event-weighted quantity. It is not a general
+replacement for Wang--Chang: subject frailty, dependence of later gaps on
+earlier gaps, or informative event counts causes participants with more events
+to contribute more gap records and changes the target. In those settings,
+`wc_surv()` is preferable for a marginal gap-time survival target, with
+subject-level bootstrap inference. PSH can still be reported as a sensitivity
+curve, but it should be labeled as the pooled/renewal estimand rather than as a
+generic recurrent Kaplan--Meier estimate. The ordinary `survival::survfit()`
+curve on the same long records is numerically the same pooled product-limit
+calculation; PSH's value is the recurrent-event interpretation and its explicit
+renewal assumptions, not a different product-limit formula.
 
 The legacy PSH implementations return an independence-style no-ties
 Greenwood/Nelson--Aalen approximation,
@@ -203,8 +267,7 @@ about 25 draws. For final 95% percentile limits or max-$t$ critical values,
 the documentation recommends $B\geq 2000$ when computation permits, yielding
 about 50 draws in each percentile tail and reducing Monte-Carlo variation.
 
-The coverage statement must match the reported quantity. A pointwise 95%
-interval has approximately 95% coverage for $S(t_0)$ at one pre-specified gap
+A pointwise 95% interval has approximately 95% coverage for $S(t_0)$ at one pre-specified gap
 time $t_0$. Drawing such intervals at multiple times does not yield 95% joint
 coverage of the full curve. The simultaneous max-$t$ band instead targets
 $P\{S(t)\ \text{is covered for every }t\in\mathcal T\}\approx 0.95$ for the
@@ -242,25 +305,27 @@ they are neither bootstrap intervals nor simultaneous bands. The same
 independence-style form, evaluated with this package's own event and risk
 increments, is available with `ci_method = "normal"` to make the legacy-style
 capability explicit. It reproduces the PSH standard-error calculation on the
-same long records; for WC it is an analogous approximation for the
-Wang--Chang-equivalent weighted risk set, not a claim of numerical replication
-of another package's variance code. It should not be relied on for dependent
+same long records, and should not be relied on for dependent
 recurrent gaps or informative event counts, because the displayed variance does
 not account for subject-level clustering. In contrast,
 `ci_method = "bootstrap"` provides a whole-curve subject-bootstrap workflow:
 percentile intervals for fixed times or a max-$t$ band for a finite grid. The
 resampling itself is conceptually straightforward; its value here is a uniform
 analyst-facing tool that makes the resampling unit, estimator, time grid, and
-coverage claim explicit and consistent across WC and PSH analyses.
+coverage claim explicit and consistent across WC and PSH analyses.  For a more complex bootstrap procedure (e.g. nested), users must bootstrap the data explicitly and then fit the models.
 
 ### Comparing curves
 
-The following code produces the Wang--Chang, PSH/pooled-KM, and difference
-curves used in the estimator validation vignettes.
+The following executable example compares Wang--Chang, PSH, and an
+independently computed pooled Kaplan--Meier curve from `survival` [@survival]
+on the same records. It illustrates the estimands, rather than reproducing
+a figure from a source paper.
 
 ```{r}
-#| label: curves
-#| eval: false
+#| label: fig-curves
+#| fig-cap: "Wang–Chang and PSH/pooled Kaplan–Meier survival on the example records, and their difference."
+#| fig-width: 10
+#| fig-height: 4
 wc <- wc_surv(gaps, episode = "episode")
 psh <- psh_surv(gaps, episode = "episode")
 
@@ -268,10 +333,16 @@ step_at <- function(fit, grid) vapply(grid, function(t) {
   ii <- which(fit$time <= t)
   if (length(ii)) fit$surv[max(ii)] else 1
 }, numeric(1))
-grid <- sort(unique(c(wc$time, psh$time)))
+grid <- sort(unique(c(0, wc$time, psh$time)))
+km <- survival::survfit(survival::Surv(gap, status) ~ 1, data = gaps)
+km_curve <- data.frame(time = km$time, surv = km$surv)
+stopifnot(max(abs(step_at(psh, grid) - step_at(km_curve, grid))) < 1e-12)
+par(mfrow = c(1, 2))
 plot(grid, step_at(wc, grid), type = "s", ylim = c(0, 1),
      xlab = "Gap time", ylab = "Survival")
 lines(grid, step_at(psh, grid), type = "s", col = "firebrick", lty = 2)
+legend("topright", c("Wang-Chang", "PSH / pooled KM"),
+       col = c("black", "firebrick"), lty = 1:2, bty = "n")
 plot(grid, step_at(wc, grid) - step_at(psh, grid), type = "s",
      xlab = "Gap time", ylab = "Wang--Chang minus PSH/KM")
 abline(h = 0, lty = 2)
@@ -279,7 +350,7 @@ abline(h = 0, lty = 2)
 
 ## Rank tests and paired visits
 
-`wc_logrank()` implements the two-group Luo--Huang weighted-risk-set
+`wc_logrank()` implements the two-group Luo--Huang weighted-risk-set [@luo2011]
 $G_\rho^*$ statistic. At each event time it contrasts weighted observed events
 with their group-specific weighted risk-set expectation. With $\rho=0$, it is
 the recurrent gap-time log-rank analogue; $\rho=1$ gives a
@@ -287,13 +358,26 @@ Peto--Prentice-type weight. The variance is based on subject-level
 martingale-style contributions to retain within-subject gap dependence.
 
 `zhao_rank_test()` is separate. It implements the extended LR, Gehan--Breslow,
-and Peto--Prentice score construction described by Zhao et al. Its default
-`pooled_risk` residual is simulation-calibrated in this package; the
+and Peto--Prentice score construction described by @zhao2020. Its default
+`pooled_risk` residual is assessed by the simulations below; current results
+do not establish published-table reproduction. The
 group-risk denominator printed in Zhao et al.'s Equation 6 is retained as the
 explicit `zhao_eq6` sensitivity/reproduction path. Neither function should be
 described as an exact substitute for the other.
 
-For two paired visits per participant, `wc_paired_permutation()` swaps labels
+There is an unresolved implementation ambiguity in the published description.
+Equation 6 appears to define the residual denominator using the risk set of
+the subject's own group, whereas the pooled-risk construction uses the pooled
+weighted risk set. These choices produce different subject residuals and hence
+different robust variance estimates even when the score numerator is unchanged.
+The package therefore labels them separately (`variance_method =
+"pooled_risk"` and `"zhao_eq6"`) and does not silently treat one as the exact
+published convention. We have drafted a clarification request to the authors
+asking which denominator and finite-sample scaling were used in the published
+simulations; until that is resolved, the comparisons below are implementation
+diagnostics rather than a claim of exact reproduction.
+
+For two paired visits per participant, `wc_paired_permutation()` randomly swaps visit labels
 within participant pairs and recalculates $G_\rho^*$. Its p-value tests the
 within-pair label-exchangeability null. The independent-arm analytical p-value
 from `wc_logrank()` is returned for context but is not a paired analysis.
@@ -301,56 +385,221 @@ from `wc_logrank()` is returned for context but is not a paired analysis.
 ## Recurrent competing risks
 
 `ss_rcif()` implements recurrent cause-specific cumulative-incidence functions
-following Sivadasan and Sankaran. The default shared weighting keeps pooled and
+following @sivadasan2023. The default shared weighting keeps pooled and
 cause-specific increments additive. `cause_weighting = "literal_eq15"` is
 retained as a sensitivity/reproduction option because literal use of the
 printed Equation 15 denominator can yield nonadditive increments.
 
 `ss_rcif_equal_causes_test()` is a subject-bootstrap Wald reconstruction of the
-METRON equal-cause test. It compares integrated RCIF contrasts and must not be
+METRON equal-cause test [@sisuma2022]. It compares integrated RCIF contrasts and must not be
 called a log-rank test.
 
 ## Validation against prior implementations
 
-The package contains opt-in numerical reference vignettes because `survrec`
-and `newTestSurvRec` are not dependencies. On continuous simulated data,
-`wc_surv()` agreed with `survrec::wc.fit()` at floating-point precision and
-with `newTestSurvRec::WC.fit()` to its eight-decimal returned rounding. The PSH
-simulation agreed with `survrec::psh.fit()` and `newTestSurvRec::PSH.fit()` at
-printed precision, including participants with no completed recurrence.
-
-The checks are deliberately estimator-specific. In particular,
-`newTestSurvRec`'s `LRrec` pathway is associated with PSH-style estimation and
-is not a numerical reference for the Wang--Chang/Luo--Huang rank test.
-
-## Planned large-scale simulations
-
-### Zhao et al. table reproduction
-
-`data-raw/zhao-2020-table-simulations.R` specifies the published-style null
-and power scenarios: the four baseline distributions, three heterogeneity
-ranges, 100 subjects per arm, 180-day follow-up, 100,000 null replicates, and
-10,000 power replicates. The runner is guarded against accidental execution,
-has chunk-level progress reporting, supports local multicore execution and
-external task partitioning, and has a SLURM launcher.
+Each row compares the same event-time grid and
+survival values with the indicated installed package [@survrec;
+@newtestsurvrec]. 
 
 ```{r}
-#| label: zhao-results-placeholder
-#| eval: false
-# Submit the configured 120-cell array; see the .sbatch file for resources.
-# system("sbatch data-raw/zhao-2020-table-simulations.sbatch")
-
-# After all array-task RDS files have been combined:
-# zhao_results <- readRDS("data-raw/zhao-2020-table-simulations.rds")
-# knitr::kable(zhao_results$table2, digits = 3,
-#   caption = "Placeholder: Zhao et al.-style null rejection rates")
+#| label: tbl-reference-checks
+#| tbl-cap: "Numerical comparisons for Wang–Chang and PSH estimators. Missing differences indicate an unavailable reference package."
+reference_checks <- manuscript_reference_checks()
+reference_display <- reference_checks
+reference_display$Max_absolute_difference <- ifelse(
+  is.na(reference_checks$Max_absolute_difference), "Not run",
+  formatC(reference_checks$Max_absolute_difference, format = "e", digits = 3))
+knitr::kable(reference_display)
 ```
 
-**Results placeholder.** These simulations have not been run to completion.
-No numerical claim of reproducing Zhao et al.'s tables is made here. Once the
-results are available, the code above will be replaced by a reproducible import
-and table/figure chunk, including Monte-Carlo standard errors and explicit
-comparison of `pooled_risk` and `zhao_eq6` variance paths.
+These are software comparisons for the estimators of @wang1999 and @pena2001.
+They are not reproductions of the simulation tables in those papers. In
+particular, `newTestSurvRec`'s `LRrec` pathway is associated with PSH-style
+estimation and is not a numerical reference for the Luo--Huang rank test.
+
+```{r}
+#| label: tbl-rank-example
+#| tbl-cap: "Executable rank-test example on the four-subject illustration. These values demonstrate the interface and are not simulation validation."
+rank_example <- do.call(rbind, lapply(c(0, 1), function(rho) {
+  fit <- wc_logrank(gaps, group = "arm", episode = "episode", rho = rho)
+  data.frame(Method = paste0("Luo-Huang, rho = ", rho),
+             z = fit$z, p_value = fit$p.value)
+}))
+knitr::kable(rank_example, digits = 4)
+```
+
+**Published-benchmark placeholder for Wang--Chang and Luo--Huang.**
+The curve in @fig-curves, the independent pooled-KM check, and
+@tbl-reference-checks provide reproducible estimator checks. Direct numerical
+reproduction of the original Wang--Chang and Luo--Huang simulation tables
+[@wang1999; @luo2011] remains a separate validation task requiring a matched
+design and transcribed published benchmarks. Zhao's results below assess a
+different rank-test construction and cannot fill that role. The existing
+K-group PSG simulation is an application-specific extension check, not a
+reproduction of Luo--Huang's two-group study.
+
+## Simulation validation
+
+### Zhao published-table comparison {#sec-zhao-validation}
+
+This section compares completed runs with the "**New method**" columns of
+Tables 1--3 in @zhao2020. Table 1 reports the SD of the standardized null
+statistic; Table 2 reports one-sided type-I error at $\alpha=0.025$; Table 3
+reports power. LR, PP, and GB denote log-rank, Peto--Prentice, and
+Gehan--Breslow weights. OLR and Jung--Jeong columns are not used as benchmarks
+for this implementation.
+
+`data-raw/zhao-2020-table-simulations.R` defines 120 cells with four baseline
+distributions, three heterogeneity ranges, 100 subjects per arm, study end
+180 days, and entry uniform on $(0,180)$. Subject gap multipliers follow
+$Z\sim U(0.5,1.5)$, $U(0.1,1.9)$, or $U(0.01,1.99)$, labeled low, medium,
+and high heterogeneity. The intended numbers of simulated datasets are
+100,000 per null cell and 10,000 per power cell. Treatment gaps in Table 3
+are multiplied by $\exp(0.25)$ or $\exp(0.5)$; for Weibull shape 2 these
+correspond to changes of 0.5 and 1 in $-\log(\lambda)$.
+
+The baseline in the corrected generator match Table 1: exponential rate
+$\exp(-4)$, Weibull shape 2 and scale $\exp(4)$, log-normal parameters
+$(\mu,\sigma)=(4,0.5)$, and log-logistic survival
+$S(t)=\{1+[\exp(-4)t]^2\}^{-1}$. The local generator uses administrative
+censoring. Zhao used `survsim::rec.ev.surv()` [@survsim] and discussed an
+additional noninformative censoring mechanism without full parameter details
+in Section 3. Thus matching baseline distributions does not establish identical
+simulation designs.
+
+The apparent Weibull parameter difference is only a parameterization issue:
+Zhao's Table 1 writes $S(t)=\exp(-\lambda t^p)$ with $p=2$ and
+$\lambda=\exp(-8)$. Since an R Weibull distribution uses
+$S(t)=\exp\{-(t/\text{scale})^p\}$, the corresponding scale is
+$\lambda^{-1/p}=\exp(4)$, exactly the value used by the generator. The
+exponential implementation uses rate $\exp(-4)$, so its mean is $\exp(4)$;
+the log-normal uses `meanlog = 4`, and the corrected log-logistic inverse draw
+uses scale $\exp(4)$ and shape parameter $0.5$. A 200,000-draw source-level
+sanity check gives means approximately 54.6, 48.4, 61.9, and 85.5 days for
+the four distributions, respectively, consistent with the paper's stated
+approximate means 55, 48, 62, and 86. The remaining differences from Zhao's
+published simulations are therefore design differences (notably the
+`survsim` generator and incompletely specified censoring mechanism), not an
+unintended `exp(4)`/`exp(-4)` scale inversion.
+
+The reference CSV, `data-raw/zhao-2020-published-tables.csv`, was transcribed
+from pages 93--95 of the publisher PDF. **Table 2 has a scale ambiguity:** its
+caption says “(*100)” but prints integers such as 27 and 25. We interpret these
+as 0.027 and 0.025, consistent with Section 3.2's nominal 0.025 level and
+interpretation. This is an explicit, unconfirmed correction; both raw printed
+values and interpreted probabilities are retained. Table 2 comparisons are
+conditional on this interpretation.
+
+```{r}
+#| label: zhao-import
+zhao <- manuscript_zhao(repo_root)
+zhao_status <- manuscript_zhao_status(zhao)
+zhao_available <- sum(zhao$available)
+zhao_comparable <- sum(zhao$available & zhao$design_eligible)
+zhao_discrepant <- sum(zhao$comparison == "discrepant")
+zhao_method <- if (zhao_available) unique(zhao$variance_method) else "not available"
+```
+
+At this render, **`r zhao_available` of 120 cells** are available, of which
+`r zhao_comparable` satisfy the recorded design-eligibility checks.
+The variance convention recorded in these files is **`r zhao_method`**.
+Availability is assessed from files, not scheduler status. Missing files are
+shown as *Pending*; they do not contribute zero rejection rates or enter
+comparison summaries. `pooled_risk` and the printed Equation 6 group-risk
+convention (`zhao_eq6`) remain distinct; the importer rejects mixtures of
+variance conventions and inconsistent settings. The `zhao_eq6` comparison
+remains pending unless a separate, consistently configured result directory
+is supplied.
+
+The cell-availability and design-eligibility counts are retained in the
+reproducibility artifacts, but are not presented as a scientific table in the
+manuscript. They are execution metadata rather than results for readers.
+
+
+#### Monte Carlo uncertainty and current findings
+
+For a rejection proportion $\hat p$ based on $B$ replicates, the Monte Carlo
+standard error is $\{\hat p(1-\hat p)/B\}^{1/2}$. Local rejection-rate
+intervals use Wilson's formula. For empirical SDs in Table 1 we use the
+normal-theory approximation $\operatorname{MCSE}(s)=s/\sqrt{2(B-1)}$;
+replicate-level fourth moments are unavailable, so this is approximate.
+A cell receives an asterisk when
+
+$$
+|\widehat\theta_{\mathrm{local}}-\widehat\theta_{\mathrm{paper}}|
+>1.96\sqrt{\operatorname{MCSE}_{\mathrm{local}}^2+
+             \operatorname{MCSE}_{\mathrm{paper}}^2}+0.0005.
+$$
+
+The last term allows half a unit of rounding in the published tables. The
+calculation assumes independent simulation runs and uses the paper's replicate
+counts. It is an exploratory cellwise discrepancy screen, not an equivalence
+test or a multiplicity-adjusted global validation rule. A cell without an
+asterisk is not proven equivalent. Nominal calibration is assessed separately
+in the exported CSV by exact binomial tests against 0.025, with Holm adjustment
+across the 36 planned Table 2 cells.
+
+```{r}
+#| label: zhao-current-findings
+#| results: asis
+#| echo: false
+if (!zhao_comparable) {
+  cat("**Results placeholder.** No design-eligible completed cells are available. ",
+      "The tables retain all published benchmarks and will populate on rerender.\n\n")
+} else {
+  cat(sprintf("Among the %d comparable completed cells, **%d are discrepant** under the criterion above.\n\n",
+              zhao_comparable, zhao_discrepant))
+  power <- subset(zhao, table == "table3" & available & design_eligible)
+  if (nrow(power)) {
+    cat(sprintf("Across %d available power cells, local minus published power ranges from **%+.2f to %+.2f percentage points**. ",
+                nrow(power), 100 * min(power$difference), 100 * max(power$difference)))
+    cat("These results require investigation of the generator/censoring design and variance convention before claiming published-table reproduction.\n\n")
+  }
+}
+```
+
+The original RDS files retain summary moments, not individual simulated
+statistics or failed-p-value counts. Consequently, the null histogram in
+Zhao's Figure 1 cannot be reconstructed from this batch. No histogram is
+inferred from a mean and SD. The figure below instead compares the reported
+quantities directly, while the following three tables retain the distribution,
+heterogeneity, alternative, and LR/PP/GB arrangement of Zhao's tables.
+
+```{r}
+#| label: fig-zhao-comparison
+#| fig-cap: "Published versus local Zhao simulation summaries. The dashed line is equality. Bars show local 95% Monte Carlo intervals (normal approximation for SDs, Wilson intervals for rejection rates). Paper uncertainty and rounding also enter the discrepancy screen. Only available, design-eligible cells are plotted."
+#| fig-width: 12
+#| fig-height: 4.2
+manuscript_zhao_plot(zhao)
+```
+
+```{r}
+#| label: tbl-zhao-null-sd
+#| tbl-cap: "Comparison with Zhao Table 1: empirical SD of the standardized null statistic at medium heterogeneity. Parentheses contain local Monte Carlo SEs; an asterisk marks a discrepancy."
+knitr::kable(manuscript_zhao_table(zhao, "table1"), booktabs = TRUE,
+             align = c("l", "l", rep("r", 6)))
+```
+
+```{r}
+#| label: tbl-zhao-type1
+#| tbl-cap: "Comparison with Zhao Table 2: one-sided type-I error probabilities. Published integers are divided by 1000 as explained in the text. Parentheses contain local Monte Carlo SEs; an asterisk marks a discrepancy."
+knitr::kable(manuscript_zhao_table(zhao, "table2"), booktabs = TRUE,
+             align = c("l", "l", rep("r", 6)))
+```
+
+```{r}
+#| label: tbl-zhao-power
+#| tbl-cap: "Comparison with Zhao Table 3: one-sided power probabilities. Parentheses contain local Monte Carlo SEs; an asterisk marks a discrepancy. The log-time shift is 0.25 or 0.5 for all four distributions."
+knitr::kable(manuscript_zhao_table(zhao, "table3"), booktabs = TRUE,
+             align = c("l", "l", "r", rep("r", 6)))
+```
+
+**Full-run placeholder.** These same chunks will produce the full-data tables
+and plot after the remaining RDS files are copied into the input directory.
+Rendering never starts the 100,000-replicate jobs. Use a separate directory
+and `ZHAO_RESULTS_DIR` to render a different variance convention rather than
+pooling results across methods. The completed-cell findings above remain
+provisional until the design differences and observed discrepancies are
+resolved.
 
 ### PSG-shaped simulation study
 
@@ -364,33 +613,51 @@ Power alternatives multiply treatment gaps by 1.25 (longer bouts) or 0.80
 sensitivity analyses, and paired label permutations where appropriate.
 
 ```{r}
-#| label: psg-results-placeholder
-#| eval: false
-# Sys.setenv(RUN_PSG_VALIDATION = "true", PSG_N_SIM = "1000", PSG_B = "999")
-# source("data-raw/psg-validation-simulations.R")
-
-# psg_results <- readRDS("data-raw/psg-validation-results.rds")
-# knitr::kable(psg_results, digits = 3,
-#   caption = "Placeholder: PSG-shaped type-I error and power simulation")
-# knitr::include_graphics("data-raw/psg-validation-rejection-rates.png")
+#| label: psg-results
+#| results: asis
+psg_file <- Sys.getenv("PSG_RESULTS_FILE", file.path(repo_root, "data-raw/psg-validation-results.rds"))
+if (!grepl("^(/|[A-Za-z]:)", psg_file)) psg_file <- file.path(repo_root, psg_file)
+if (file.exists(psg_file)) {
+  psg_results <- readRDS(psg_file)
+  stopifnot(is.data.frame(psg_results),
+    all(c("design", "alternative", "method", "n_sim", "B", "rejection_rate", "monte_carlo_se") %in% names(psg_results)))
+  cat("Available PSG summaries are shown with their actual replicate and permutation counts; small runs are pilots, not full-study validation.\n\n")
+  print(knitr::kable(psg_results, digits = 4))
+} else {
+  cat("**Results placeholder.** No combined PSG result file is available. The planned 1,000-replicate/999-permutation results will be imported on rerender when `data-raw/psg-validation-results.rds` is supplied. Set `PSG_RESULTS_FILE` to select a different result file.\n\n")
+}
 ```
 
-**Results placeholder.** The simulation design and output contract are part of
-the package, but the full 1,000-replicate/999-permutation study is pending.
-The manuscript will incorporate its table and figure only after the jobs finish
-and their Monte-Carlo uncertainty has been assessed.
+### K-group application-specific pilot
+
+The following table imports the existing K-group output, if available. Its
+replicate count is displayed explicitly. It assesses the package's extension
+of the weighted-risk-set score to three unequal arms under the PSG-shaped
+design in `data-raw/wc-logrank-k-validation-simulation.R`. It is not a
+published numerical benchmark from @luo2011, and a small pilot does not
+establish type-I-error control.
+
+```{r}
+#| label: k-group-results
+#| results: asis
+k_file <- file.path(repo_root, "data-raw/wc-logrank-k-validation-results.csv")
+if (file.exists(k_file)) {
+  k_results <- read.csv(k_file)
+  stopifnot(all(c("scenario", "rejection_rate", "mc_se", "n_sim") %in% names(k_results)))
+  print(knitr::kable(k_results, digits = 4))
+} else {
+  cat("**Results placeholder.** No K-group output is available.\n\n")
+}
+```
 
 ## Use of AI-assisted development
 
 AI assistance was used during development to help locate and summarize
 published methods, draft documentation and simulation scaffolding, translate
 published formulas into candidate R code, and propose test cases. AI output was
-not treated as statistical validation. Every implemented estimator was checked
-against the cited formulas and, where available, numerical output from
-independent prior R implementations. Package unit tests, vignette rendering,
-`roxygen2::roxygenise()`, and `devtools::check()` provide additional software
-validation. The pending large simulations are explicitly separated from
-completed validation and will be reported only after execution and review.
+not treated as statistical validation. Candidate implementations were reviewed against the cited formulas. The
+executable checks below assess WC and PSH against independent R packages;
+these checks do not validate every rank test or competing-risk procedure. 
 
 ## Discussion
 
@@ -404,42 +671,80 @@ implementations to legacy software, while the simulation infrastructure makes
 remaining empirical questions reproducible rather than implicit.
 
 Future work includes completing the configured Zhao and PSG simulations,
-reporting their Monte-Carlo uncertainty, extending rank tests to more than two
-groups, and comparing nonparametric tests with marginal and frailty regression
+resolving the observed reproduction discrepancies, further validating the
+implemented K-group rank-test extension, and comparing nonparametric tests with marginal and frailty regression
 models on planned sleep-bout applications.
 
-## References
+### What must be run before a complete manuscript render
 
-Luo X, Huang CY (2011). Analysis of recurrent gap time data using the weighted
-risk-set method and the modified within-cluster resampling method. *Statistics
-in Medicine*, 30, 301--311. doi:10.1002/sim.4074.
+The ordinary examples, estimator/reference checks, table formatting, and
+manuscript rendering are local and do not launch simulations. The remaining
+optional outputs have different costs:
 
-Pena EA, Strawderman RL, Hollander M (2001). Nonparametric estimation with
-recurrent event data. *Journal of the American Statistical Association*, 96,
-1299--1315. doi:10.1198/016214501753381887.
+| Output | Driver | Recommended execution | Input needed by render |
+|---|---|---|---|
+| Zhao Tables 1--3 | `data-raw/zhao-2020-table-simulations.R` via `zhao-2020-table-simulations.sbatch` | HPC. Each of 120 tasks contains 100,000 null or 10,000 power replicates; use the corrected log-logistic tasks plus any other missing task IDs. | One task-specific RDS per task in `data-raw/zhao-2020-table-simulations/`; then render locally. |
+| PSG-shaped study | `data-raw/psg-validation-simulations.R` via its Slurm array | HPC for the planned 10,000 replicates and 999 paired permutations. Combine task RDS/CSV files into `data-raw/psg-validation-results.rds`. | The combined RDS named above. |
+| K-group pilot/validation | `data-raw/wc-logrank-k-validation-simulation.R` via its Slurm array | Local for a small pilot; HPC for 20,000 replicates. Combine task outputs before treating it as a full validation. | `data-raw/wc-logrank-k-validation-results.csv` (the current file is a pilot). |
+| Curve-interval coverage | `data-raw/curve-ci-coverage-simulation.R` | HPC recommended: 25,000-subject truth plus 1,000 data sets and 999 bootstraps. Verify task partitioning/aggregation before submitting the current array wrapper. | `data-raw/curve-ci-coverage-results.rds` (not currently available). |
+| Zhao report aggregation | `data-raw/zhao-2020-validation-report.R` | Local after Zhao RDS files arrive; it does not simulate. | Existing task RDS files. |
+| Final manuscript artifacts | `data-raw/reproduce-manuscript.R` | Local; runs Quarto and writes public tables plus internal metadata. | Any optional combined outputs supplied above. |
 
-Sivadasan SM, Sankaran PG (2022). A nonparametric test for comparing recurrent
-cumulative incidence functions. *METRON*. doi:10.1007/s40300-022-00228-x.
+At present, the Zhao directory is incomplete. The missing task IDs are
+`4, 8, 12, 16, 20, 21, 24, 28, 32, 33, 36, 37, 40, 44, 48, 52, 56, 60,
+64, 68, 72, 76, 80, 84, 88, 92, 94, 96, 100, 104, 108, 112, 116, 120`.
+IDs divisible by four are the corrected log-logistic cells; the other missing
+IDs should be rerun with the same driver as their original cell. The validation
+report and manuscript intentionally show these as pending rather than treating
+them as zero results.
 
-Sivadasan SM, Sankaran PG (2023). Nonparametric estimation of cumulative
-incidence functions of recurrent events. *Statistica*, 83, 3--25.
+```{r}
+#| label: export-reproducibility
+#| include: false
+artifact_dir <- Sys.getenv("MANUSCRIPT_OUTPUT_DIR", file.path(repo_root, "docs/jss-manuscript"))
+if (!grepl("^(/|[A-Za-z]:)", artifact_dir)) artifact_dir <- file.path(repo_root, artifact_dir)
+dir.create(artifact_dir, recursive = TRUE, showWarnings = FALSE)
+internal_dir <- file.path(artifact_dir, "_internal")
+dir.create(internal_dir, recursive = TRUE, showWarnings = FALSE)
+write.csv(zhao, file.path(internal_dir, "zhao-comparison.csv"), row.names = FALSE, na = "")
+write.csv(zhao_status, file.path(internal_dir, "zhao-completeness.csv"), row.names = FALSE)
+write.csv(reference_checks, file.path(artifact_dir, "reference-checks.csv"), row.names = FALSE, na = "")
+for (nm in c("table1", "table2", "table3")) {
+  write.csv(manuscript_zhao_table(zhao, nm),
+            file.path(artifact_dir, paste0("zhao-", nm, ".csv")), row.names = FALSE)
+}
+write.csv(attr(zhao, "input_manifest"), file.path(internal_dir, "zhao-input-manifest.csv"), row.names = FALSE)
+supplement_files <- c(psg_file, k_file)
+supplement_files <- supplement_files[file.exists(supplement_files)]
+write.csv(data.frame(file = basename(supplement_files),
+  md5 = unname(tools::md5sum(supplement_files))),
+  file.path(artifact_dir, "supplement-input-manifest.csv"), row.names = FALSE)
+source_files <- c("DESCRIPTION", "vignettes/jss-manuscript.qmd", "vignettes/manuscript-helpers.R",
+  "vignettes/references.bib", "data-raw/zhao-2020-validation-report.R",
+  "data-raw/zhao-2020-published-tables.csv", "data-raw/zhao-2020-published-tables.md",
+  "data-raw/zhao-2020-table-simulations.R", "data-raw/zhao-2020-table-simulations.sbatch",
+  "data-raw/psg-validation-simulations.R", "data-raw/wc-logrank-k-validation-simulation.R",
+  "data-raw/check-manuscript-inputs.R",
+  paste0("R/", list.files(file.path(repo_root, "R"), pattern = "[.]R$", full.names = FALSE)))
+write.csv(data.frame(file = source_files,
+  md5 = unname(tools::md5sum(file.path(repo_root, source_files)))),
+  file.path(artifact_dir, "source-manifest.csv"), row.names = FALSE)
+png(file.path(artifact_dir, "zhao-comparison.png"), width = 2400, height = 840, res = 200)
+manuscript_zhao_plot(zhao)
+dev.off()
+pdf(file.path(artifact_dir, "zhao-comparison.pdf"), width = 12, height = 4.2)
+manuscript_zhao_plot(zhao)
+dev.off()
+capture.output(sessionInfo(), file = file.path(artifact_dir, "session-info.txt"))
+```
 
-Wang MC, Chang SH (1999). Nonparametric estimation of a recurrent survival
-function. *Journal of the American Statistical Association*, 94, 146--153.
+```{r}
+#| label: session-info
+#| echo: false
+sessionInfo()
+```
 
-Zhao Q, Zhang B, LaValley MP, Massaro JM, Lunetta KL, Chang M (2020). Extended
-rank tests for analyzing recurrent event data. *Statistics in Biopharmaceutical
-Research*, 12, 90--98. doi:10.1080/19466315.2019.1601596.
+## References {.unnumbered}
 
-Gonzalez JR, Pena EA, Strawderman RL (2018). *survrec: Survival Analysis for
-Recurrent Event Data*. R package.
-
-Manrique CMM (2018). *newTestSurvRec: Statistical Tests to Compare Curves with
-Recurrent Events*. R package.
-
-Therneau TM (2024). *coxme: Mixed Effects Cox Models*. R package.
-
-Rondeau V, Mazroui Y, Gonzalez JR (2012). frailtypack: An R package for the
-analysis of correlated survival data with frailty models using penalized
-likelihood estimation or parametrical estimation. *Journal of Statistical
-Software*, 47(4), 1--28. doi:10.18637/jss.v047.i04.
+::: {#refs}
+:::

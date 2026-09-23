@@ -10,6 +10,15 @@ test_that("paper log-logistic gaps follow Zhao Table 1 survival", {
   expect_equal(sd(log(gaps)), pi / sqrt(12), tolerance = 0.02)
 })
 
+test_that("Zhao Table 1 exp(4) parameterizations have the intended means", {
+  set.seed(230924)
+  n <- 20000
+  means <- vapply(c("exponential", "weibull", "lognormal", "loglogistic"),
+    function(d) mean(replicate(n, recurSurvTests:::.zhao_draw_gap(d))), numeric(1))
+  expected <- c(exp(4), exp(4) * gamma(1.5), exp(4 + 0.5^2 / 2), exp(4) * pi / 2)
+  expect_equal(unname(means), expected, tolerance = 0.04)
+})
+
 test_that("paper log-logistic histories have plausible event counts", {
   set.seed(230923)
   dat <- recurSurvTests:::.zhao_simulated_gap_data(

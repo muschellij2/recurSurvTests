@@ -11,5 +11,8 @@
 ^pkgdown$
 ^_pkgdown\.yml$
 ^data-raw$
-^recurSurvTests/vignettes/jss-manuscript_files/libs$
-^recurSurvTests/vignettes/jss-manuscript_files$
+^vignettes/jss-manuscript_files$
+^vignettes/jss-manuscript_cache$
+^vignettes/jss-manuscript\.html$
+^vignettes/jss-manuscript\.rmarkdown$
+^vignettes/jss-manuscript\.knit\.md$

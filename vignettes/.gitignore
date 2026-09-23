@@ -1,2 +1,5 @@
 *.html
 *.R
+!manuscript-helpers.R
+jss-manuscript.rmarkdown
+jss-manuscript.knit.md

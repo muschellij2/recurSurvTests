@@ -33,6 +33,26 @@ target cause-specific incidence rather than a survival curve. Thus a result
 from `wc_logrank()` should not be interpreted as a test of a calendar-time mean
 cumulative function or an RCIF.
 
+## Relationship to existing R packages
+
+The Wang--Chang and Pena--Strawderman--Hollander curves are established
+estimators; `newTestSurvRec` also provides recurrent-curve machinery for them.
+The corresponding functions in this package (`wc_surv()` and `psh_surv()`) are
+transparent reference components, not claims of new estimators. `reda` and
+`mets` provide mean cumulative recurrent-event functions and tests for that
+calendar-time target. Those methods are useful complements, but they do not
+duplicate the gap-time Luo--Huang/Zhao rank tests or the Sivadasan--Sankaran
+recurrent-CIF methods documented below. A source-level comparison is recorded
+in `docs/related-software.md` in the repository.
+
+For a calendar-time question about the expected number of events by time `t`,
+the established choices are `reda::mcfDiff()` or
+`mets::recurrent_marginal()` and `mets::test_logrankRecurrent()`. Those tools
+also cover AUC-style comparisons and terminal-event settings. This package is
+for the complementary gap-time question: comparison of the marginal
+distribution of recurrent gaps, or comparison of recurrent cause-specific
+incidence curves.
+
 ```{r data}
 gaps <- data.frame(
   id = rep(1:4, each = 3),
@@ -85,9 +105,9 @@ rank_fit <- wc_logrank(gaps, group = "arm", episode = "episode", rho = 0)
 rank_fit[c("method", "interpretation", "G", "se", "p.value")]
 ```
 
-This is Luo-Huang's implementation, not an exact Zhao et al. (2020)
-implementation; the available Zhao supplement does not supply enough formulas
-or source code to reconstruct the latter.
+This is Luo-Huang's implementation, not the separate Zhao et al. (2020)
+score construction. The `zhao_rank_test()` section below keeps those methods
+distinct and reports the unresolved Equation 6 variance convention explicitly.
 
 ## Zhao extended rank tests and simulation checks
 

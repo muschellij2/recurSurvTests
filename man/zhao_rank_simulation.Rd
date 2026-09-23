@@ -32,7 +32,10 @@ minutes, calibrated for approximately \code{target_events} completed events per
 participant.}
 
 \item{distribution}{Baseline gap-time distribution used in Zhao et al.'s
-Table 1.}
+Table 1. The paper's parameterization is used: exponential rate
+\code{exp(-4)}; Weibull shape 2 and scale \code{exp(4)} (equivalent to
+\code{lambda = exp(-8)} in \code{exp(-lambda * t^2)}); log-normal \code{meanlog = 4},
+\code{sdlog = 0.5}; and log-logistic \code{lambda = exp(-4)}, \code{gamma = 0.5}.}
 
 \item{heterogeneity}{Two endpoints of the subject multiplier \code{Z ~ U(a, b)}.}
 

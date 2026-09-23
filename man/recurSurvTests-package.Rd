@@ -42,6 +42,15 @@ These are research reference implementations assembled from published
 formulas. In particular, the equal-cause RCIF test is explicitly a bootstrap
 reconstruction rather than claimed byte-for-byte reproduction of unpublished
 author software.
+
+The package is not claiming algorithmic novelty for every component. The
+\code{newTestSurvRec} package already provides Wang--Chang and
+Pena--Strawderman--Hollander recurrent-curve machinery; \code{wc_surv()} and
+\code{psh_surv()} are included here as transparent compatibility/reference
+implementations. The \code{reda} and \code{mets} packages target calendar-time mean
+cumulative recurrent-event functions, which are a different estimand from
+the gap-time survival and recurrent-CIF methods here. See
+\code{docs/related-software.md} in the source repository for the scope audit.
 }
 
 \references{

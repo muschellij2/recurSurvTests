@@ -152,7 +152,10 @@ zhao_rank_test <- function(data, group, id = "id", gap = "gap",
 #'   minutes, calibrated for approximately `target_events` completed events per
 #'   participant.
 #' @param distribution Baseline gap-time distribution used in Zhao et al.'s
-#'   Table 1.
+#'   Table 1. The paper's parameterization is used: exponential rate
+#'   `exp(-4)`; Weibull shape 2 and scale `exp(4)` (equivalent to
+#'   `lambda = exp(-8)` in `exp(-lambda * t^2)`); log-normal `meanlog = 4`,
+#'   `sdlog = 0.5`; and log-logistic `lambda = exp(-4)`, `gamma = 0.5`.
 #' @param heterogeneity Two endpoints of the subject multiplier `Z ~ U(a, b)`.
 #' @param followup Administrative study end time.
 #' @param target_events Target mean number of completed events per participant

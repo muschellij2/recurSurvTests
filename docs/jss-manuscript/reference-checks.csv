@@ -1,0 +1,9 @@
+"Scenario","Estimator","Reference","Version","Max_absolute_difference"
+"100 subjects, 1-5 events","WC","survrec","1.2.5",1.0547118733939e-15
+"100 subjects, 1-5 events","WC","newTestSurvRec","1.0.2",3.33333360913457e-09
+"100 subjects, 1-5 events","PSH","survrec","1.2.5",0
+"100 subjects, 1-5 events","PSH","newTestSurvRec","1.0.2",0
+"80 subjects, 0-6 events","WC","survrec","1.2.5",5.55111512312578e-17
+"80 subjects, 0-6 events","WC","newTestSurvRec","1.0.2",4.99940344678151e-09
+"80 subjects, 0-6 events","PSH","survrec","1.2.5",0
+"80 subjects, 0-6 events","PSH","newTestSurvRec","1.0.2",0

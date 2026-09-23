@@ -26,9 +26,12 @@ Roxygen: list(markdown = TRUE)
 Imports:
     stats
 Suggests:
+    here,
     knitr,
+    pkgload,
     rmarkdown,
     roxygen2,
+    survival,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 URL: https://muschellij2.github.io/recurSurvTests/, https://github.com/muschellij2/recurSurvTests

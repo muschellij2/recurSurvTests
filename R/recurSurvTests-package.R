@@ -32,6 +32,15 @@
 #' reconstruction rather than claimed byte-for-byte reproduction of unpublished
 #' author software.
 #'
+#' The package is not claiming algorithmic novelty for every component. The
+#' `newTestSurvRec` package already provides Wang--Chang and
+#' Pena--Strawderman--Hollander recurrent-curve machinery; `wc_surv()` and
+#' `psh_surv()` are included here as transparent compatibility/reference
+#' implementations. The `reda` and `mets` packages target calendar-time mean
+#' cumulative recurrent-event functions, which are a different estimand from
+#' the gap-time survival and recurrent-CIF methods here. See
+#' `docs/related-software.md` in the source repository for the scope audit.
+#'
 #' @references
 #' Wang MC, Chang SH (1999). Nonparametric estimation of a recurrent survival
 #' function. *Journal of the American Statistical Association*, 94, 146-153.
