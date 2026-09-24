@@ -12,3 +12,6 @@ inst/doc
 data-raw/slurm-logs/
 data-raw/zhao-2020-table-simulations/
 plan*.txt
+data-raw/curve-ci-coverage-results
+data-raw/psg-validation-results
+data-raw/wc-logrank-k-validation-results
