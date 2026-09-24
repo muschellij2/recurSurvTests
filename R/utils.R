@@ -72,10 +72,14 @@
 #' @keywords internal
 #' @noRd
 .subject_records <- function(d, id, gap, status, group = NULL, cause = NULL) {
-  ids <- unique(d[[id]])
+  # `d` is already ordered by id.  Splitting row indices once avoids scanning
+  # the full data frame again for every subject, which is quadratic in the
+  # number of subjects for large Monte-Carlo reference populations.
+  row_index <- split(seq_len(nrow(d)), d[[id]], drop = TRUE)
 
-  lapply(ids, function(sid) {
-    g <- d[d[[id]] == sid, , drop = FALSE]
+  lapply(row_index, function(ii) {
+    g <- d[ii, , drop = FALSE]
+    sid <- d[[id]][ii[1]]
     gaps <- as.numeric(g[[gap]])
     stat <- as.integer(g[[status]])
     m <- length(gaps)
