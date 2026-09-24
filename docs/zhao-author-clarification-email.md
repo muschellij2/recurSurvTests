@@ -14,7 +14,7 @@ Could you please clarify two details that affect numerical reproduction?
 1. **Equation 6 residual denominator.** In our reading, the residual appears to
    use a risk-set denominator specific to the subject's treatment group. A
    pooled-risk implementation is also natural because the score uses the pooled
-   Wang--Chang weighted risk set. Which denominator did you use in the
+   Wang-Chang weighted risk set. Which denominator did you use in the
    simulations and published Tables 1–3? If the group-specific denominator is
    intended, should it be evaluated before or after applying the LR/GB/PP time
    weight? Any source code or pseudocode for the subject residual and robust

@@ -50,11 +50,11 @@ Nonparametric recurrent-event survival curves are available in the statistical
 literature, but openly available implementations of tests for differences
 between those curves have been limited. `recurSurvTests` provides R
 implementations for estimating and comparing recurrent curves on their intended
-scales: (i) Wang--Chang marginal recurrent gap-time survival and Luo--Huang
+scales: (i) Wang-Chang marginal recurrent gap-time survival and Luo-Huang
 weighted-risk-set rank tests, (ii) the
-Pena--Strawderman--Hollander generalized product-limit estimator, (iii) a
+Peña-Strawderman-Hollander generalized product-limit estimator, (iii) a
 separately documented Zhao et al. extended-rank implementation with a
-sensitivity variance path, and (iv) Sivadasan--Sankaran recurrent
+sensitivity variance path, and (iv) Sivadasan-Sankaran recurrent
 cause-specific cumulative-incidence functions and their Wald-type comparison.
 The package is designed to enable tests whose risk sets, weights, and null
 hypotheses correspond to the curve an investigator has chosen to estimate.
@@ -64,7 +64,7 @@ choices explicit rather than treating their tests as substitutes. This
 manuscript documents the methods, data conventions, numerical checks against
 prior R implementations where available, and reproducible simulation designs.  We provide a comparison to published tables and also show an example similar to data analysis from polysomnography sleep data analyzing sleep bouts.
 
-**Keywords:** recurrent events, gap time, Wang--Chang estimator, weighted risk
+**Keywords:** recurrent events, gap time, Wang-Chang estimator, weighted risk
 set, product-limit estimator, competing risks, R
 
 ## Introduction
@@ -86,7 +86,7 @@ estimand used for the curve and the estimand targeted by its comparison must be
 aligned before a reported p-value has its intended interpretation.
 
 Substantial software already supports recurrent-event regression. For example,
-the Andersen--Gill [@andersen1982], Prentice--Williams--Peterson (PWP)
+the Andersen-Gill [@andersen1982], Prentice-Williams-Peterson (PWP)
 [@prentice1981], and related Cox-model formulations provide score,
 Wald, and likelihood-based inference for regression coefficients; mixed-effects
 and frailty extensions are available in `coxme` [@coxme] and `frailtypack` [@frailtypack]. These are
@@ -95,7 +95,7 @@ target. They do not, however, supply a nonparametric global test for equality
 of an estimated recurrent gap-time survival curve or tests contrasting such
 survival curves across groups. Existing recurrent-curve R
 software has also made important contributions: `survrec` [@survrec] includes
-Wang--Chang and Pena--Strawderman--Hollander estimators, and `newTestSurvRec` [@newtestsurvrec]
+Wang-Chang and Peña-Strawderman-Hollander estimators, and `newTestSurvRec` [@newtestsurvrec]
 includes recurrent-event curve estimators and rank-test procedures. Their
 available estimators and testing paths do not all target the same curve, so a
 test cannot be transferred between them solely on the basis of a shared label
@@ -106,24 +106,24 @@ tests that correspond to the recurrent curves under analysis. It is not a
 general recurrent-event modeling framework. Its primary aim is to let users
 estimate a clearly defined recurrent curve and conduct a comparison whose risk
 set, weighting, and null hypothesis match that curve--in particular, the
-Wang--Chang marginal gap-time survival curve and its Luo--Huang weighted-risk-
+Wang-Chang marginal gap-time survival curve and its Luo-Huang weighted-risk-
 set comparison. The package also keeps alternative estimands explicit, rather
 than presenting their tests as interchangeable.
 
 ### Relationship to `newTestSurvRec::Dif.Surv.Rec()`
 
 The existence of `newTestSurvRec::Dif.Surv.Rec()` does not make the Zhao and
-Luo--Huang implementations redundant, but the functions should not be treated
+Luo-Huang implementations redundant, but the functions should not be treated
 as interchangeable. A source-level inspection of `Dif.Surv.Rec()` shows the
 following distinctions:
 
 | Component | `newTestSurvRec::Dif.Surv.Rec()` | Zhao et al. (2020) / `zhao_rank_test()` |
 |---|---|---|
-| Curve/risk-set path | The function calls `survfitr(..., type = "pe")`, i.e. its displayed test path is built from the Pena--Strawderman--Hollander/GPLE-style pooled gap-record fit. The package also contains a separate Wang--Chang fitter, but that is not the estimator selected inside this function. | Uses Wang--Chang weighted risk and event masses, with each subject's eligible gaps scaled by $1/m_i^*$. |
-| Score numerator | At each pooled event time, group-1 events minus the pooled-risk expected group-1 count. | The same broad observed-minus-expected rank-test idea, but with the Wang--Chang weighted counts and the score in Equation 3. |
-| Weight families | Provides a broad family (`LRrec`, `Grec`, `TWrec`, `PPrec`, `PMrec`, `PPrrec`, `HFrec`, `CMrec`, `Mrec`). For example, `Grec` uses the total risk-set size and `TWrec` its square root. | Implements the three paper weights LR, GB, and PP. In the paper's notation these are $1$, $n/Y^*(t)$, and the pooled Wang--Chang survival estimate $S^*(t)$, respectively. Thus the label "GB" is not evidence that the `Grec` calculation is the same test. |
+| Curve/risk-set path | The function calls `survfitr(..., type = "pe")`, i.e. its displayed test path is built from the Peña-Strawderman-Hollander/GPLE-style pooled gap-record fit. The package also contains a separate Wang-Chang fitter, but that is not the estimator selected inside this function. | Uses Wang-Chang weighted risk and event masses, with each subject's eligible gaps scaled by $1/m_i^*$. |
+| Score numerator | At each pooled event time, group-1 events minus the pooled-risk expected group-1 count. | The same broad observed-minus-expected rank-test idea, but with the Wang-Chang weighted counts and the score in Equation 3. |
+| Weight families | Provides a broad family (`LRrec`, `Grec`, `TWrec`, `PPrec`, `PMrec`, `PPrrec`, `HFrec`, `CMrec`, `Mrec`). For example, `Grec` uses the total risk-set size and `TWrec` its square root. | Implements the three paper weights LR, GB, and PP. In the paper's notation these are $1$, $n/Y^*(t)$, and the pooled Wang-Chang survival estimate $S^*(t)$, respectively. Thus the label "GB" is not evidence that the `Grec` calculation is the same test. |
 | Variance | Uses an event-time variance term based on pooled and group risk-set/event counts, then sums weighted contributions. It does not use Zhao's subject residual vector. | Uses subject-level residuals from Equation 6 and the robust variance $\widehat V^* = \sum_i \hat\epsilon_i^{*2}$ in Equation 7. The pooled-risk and group-specific Equation 6 conventions are retained separately here. |
-| Output interpretation | A family of recurrent-curve tests whose default curve path is PSH/GPLE-style. | A test of equality of Wang--Chang marginal recurrent gap-time survival distributions, with a paper-specific robust variance construction. |
+| Output interpretation | A family of recurrent-curve tests whose default curve path is PSH/GPLE-style. | A test of equality of Wang-Chang marginal recurrent gap-time survival distributions, with a paper-specific robust variance construction. |
 
 Consequently, `Dif.Surv.Rec(type = "LRrec")` is a useful historical recurrent
 curve rank test and an important reference comparison, but it is not an exact
@@ -135,17 +135,17 @@ validation oracle for `zhao_rank_test()`.
 
 Three scientific targets are kept separate throughout:
 
-1. Marginal recurrent **gap-time survival**, the target of Wang--Chang and the
-   Luo--Huang rank test.
+1. Marginal recurrent **gap-time survival**, the target of Wang-Chang and the
+   Luo-Huang rank test.
 2. Mean cumulative recurrent-event burden on the **calendar-time** scale,
    which is not implemented here.
 3. Recurrent cause-specific cumulative incidence for **gap times**, the target
-   of the Sivadasan--Sankaran estimators.
+   of the Sivadasan-Sankaran estimators.
 
 This separation avoids calling all recurrent-event comparisons "log-rank
 tests." In this manuscript, CIF means cumulative-incidence function, and
 RCIF means recurrent cumulative-incidence function. METRON is the journal
-*METRON*, where the Sivadasan--Sankaran recurrent-CIF test was published; that
+*METRON*, where the Sivadasan-Sankaran recurrent-CIF test was published; that
 procedure is a weighted
 contrast/Wald-type procedure and is not a log-rank test.
 
@@ -182,10 +182,10 @@ to make formula-to-code comparison possible.
 
 ## Recurrent gap-time survival estimators
 
-### Wang--Chang marginal survival
+### Wang-Chang marginal survival
 
 Let $m_i^*=1$ for a participant with no complete recurrence and otherwise let
-$m_i^*$ equal the number of completed gaps. The Wang--Chang weighted risk and
+$m_i^*$ equal the number of completed gaps. The Wang-Chang weighted risk and
 event increments [@wang1999; @luo2011] are
 
 $$
@@ -207,9 +207,9 @@ from receiving proportionally more influence on the marginal gap distribution.
 The implementation uses the weighted-risk-set representation shown by
 @luo2011 to be algebraically equivalent to the estimator of @wang1999.
 
-### PSH and pooled Kaplan--Meier
+### PSH and pooled Kaplan-Meier
 
-The Pena--Strawderman--Hollander (PSH) generalized product-limit estimator
+The Peña-Strawderman-Hollander (PSH) generalized product-limit estimator
 [@pena2001] uses
 all observed gap records with unit weight:
 
@@ -224,30 +224,30 @@ $$
 $$
 
 Therefore `psh_surv()` is numerically identical to an ordinary pooled
-Kaplan--Meier calculation on the same long gap records, including terminal
+Kaplan-Meier calculation on the same long gap records, including terminal
 censored gaps. They do not diverge merely because censoring is increased.
 They can appear to differ only if "KM" refers to a different data construction,
 for example first gaps only, a calendar-time analysis, different treatment of
 terminal censoring, or weights. PSH has a renewal/IID gap-model interpretation;
-that interpretation is distinct from the Wang--Chang marginal estimand.
+that interpretation is distinct from the Wang-Chang marginal estimand.
 
 In practice, PSH is most defensible when the scientific target is the
 distribution of an exchangeable/IID inter-occurrence time under a renewal model
 (with independent censoring), or when a pooled gap-record curve is being shown
 explicitly as a descriptive event-weighted quantity. It is not a general
-replacement for Wang--Chang: subject frailty, dependence of later gaps on
+replacement for Wang-Chang: subject frailty, dependence of later gaps on
 earlier gaps, or informative event counts causes participants with more events
 to contribute more gap records and changes the target. In those settings,
 `wc_surv()` is preferable for a marginal gap-time survival target, with
 subject-level bootstrap inference. PSH can still be reported as a sensitivity
 curve, but it should be labeled as the pooled/renewal estimand rather than as a
-generic recurrent Kaplan--Meier estimate. The ordinary `survival::survfit()`
+generic recurrent Kaplan-Meier estimate. The ordinary `survival::survfit()`
 curve on the same long records is numerically the same pooled product-limit
 calculation; PSH's value is the recurrent-event interpretation and its explicit
 renewal assumptions, not a different product-limit formula.
 
 The legacy PSH implementations return an independence-style no-ties
-Greenwood/Nelson--Aalen approximation,
+Greenwood/Nelson-Aalen approximation,
 $\widehat S_{PSH}(t)^2\sum_{u\leq t}dN(u)/R(u)^2$. It is not generally
 appropriate when within-subject gaps are dependent or event counts are
 informative. In such settings, clustered uncertainty methods are needed; a
@@ -303,7 +303,7 @@ performs WC or PSH bootstrap resampling for a *selected survival quantile*,
 such as a median, and returns a `boot` object for subsequent interval
 calculation. Thus bootstrap inference was not absent from earlier R work.
 The standard errors returned by the inspected `newTestSurvRec` WC and PSH
-fitters are the independence-style Nelson--Aalen/Greenwood approximation,
+fitters are the independence-style Nelson-Aalen/Greenwood approximation,
 
 $$
 \widehat{\mathrm{SE}}\{\widehat S(t)\}=
@@ -327,8 +327,8 @@ coverage claim explicit and consistent across WC and PSH analyses.  For a more c
 
 ### Comparing curves
 
-The following executable example compares Wang--Chang, PSH, and an
-independently computed pooled Kaplan--Meier curve from `survival` [@survival]
+The following executable example compares Wang-Chang, PSH, and an
+independently computed pooled Kaplan-Meier curve from `survival` [@survival]
 on the same records. It illustrates the estimands, rather than reproducing
 a figure from a source paper.
 
@@ -355,27 +355,27 @@ lines(grid, step_at(psh, grid), type = "s", col = "firebrick", lty = 2)
 legend("topright", c("Wang-Chang", "PSH / pooled KM"),
        col = c("black", "firebrick"), lty = 1:2, bty = "n")
 plot(grid, step_at(wc, grid) - step_at(psh, grid), type = "s",
-     xlab = "Gap time", ylab = "Wang--Chang minus PSH/KM")
+     xlab = "Gap time", ylab = "Wang-Chang minus PSH/KM")
 abline(h = 0, lty = 2)
 ```
 
 ## Rank tests and paired visits
 
-`wc_logrank()` implements the two-group Luo--Huang weighted-risk-set [@luo2011]
+`wc_logrank()` implements the two-group Luo-Huang weighted-risk-set [@luo2011]
 $G_\rho^*$ statistic. At each event time it contrasts weighted observed events
 with their group-specific weighted risk-set expectation. With $\rho=0$, it is
 the recurrent gap-time log-rank analogue. Its implementation uses
-$w(t)=\widehat S_{WC}(t-)^\rho$, where the pooled Wang--Chang survival estimate
+$w(t)=\widehat S_{WC}(t-)^\rho$, where the pooled Wang-Chang survival estimate
 is evaluated just before the event time. Thus $\rho=1$ downweights late events
-in proportion to the estimated survival remaining, a Peto--Prentice-type
+in proportion to the estimated survival remaining, a Peto-Prentice-type
 weight; it is not the same as the log-rank weight $w(t)=1$, which gives every
 event time equal weight. The variance is built from subject-level contributions
 to the score: each subject's observed-minus-expected weighted event increments
 are summed across that subject's gaps, preserving their covariance rather than
 treating the gap rows as independent.
 
-`zhao_rank_test()` is separate. It implements the extended LR, Gehan--Breslow,
-and Peto--Prentice score construction described by @zhao2020. Its default
+`zhao_rank_test()` is separate. It implements the extended LR, Gehan-Breslow,
+and Peto-Prentice score construction described by @zhao2020. Its default
 `pooled_risk` residual is assessed by the simulations below; current results
 are diagnostics of this implementation and do not establish byte-for-byte
 reproduction of the published tables. The
@@ -443,17 +443,17 @@ knitr::kable(reference_display)
 These are software comparisons for the estimators of @wang1999 and @pena2001.
 They are not reproductions of the simulation tables in those papers. In
 particular, `newTestSurvRec`'s `LRrec` pathway is associated with PSH-style
-estimation and is not a numerical reference for the Luo--Huang rank test.
+estimation and is not a numerical reference for the Luo-Huang rank test.
 
-**Published-benchmark placeholder for Wang--Chang and Luo--Huang.**
+**Published-benchmark placeholder for Wang-Chang and Luo-Huang.**
 The curve in @fig-curves, the independent pooled-KM check, and
 @tbl-reference-checks provide reproducible estimator checks. Direct numerical
-reproduction of the original Wang--Chang and Luo--Huang simulation tables
+reproduction of the original Wang-Chang and Luo-Huang simulation tables
 [@wang1999; @luo2011] remains a separate validation task requiring a matched
 design and transcribed published benchmarks. Zhao's results below assess a
 different rank-test construction and cannot fill that role. The existing
 K-group polysomnography (PSG) simulation is an application-specific extension check, not a
-reproduction of Luo--Huang's two-group study.
+reproduction of Luo-Huang's two-group study.
 
 ## Simulation validation
 
@@ -462,11 +462,11 @@ reproduction of Luo--Huang's two-group study.
 This section compares completed runs with the "**New method**" columns of
 Tables 1--3 in @zhao2020. Table 1 reports the SD of the standardized null
 statistic; Table 2 reports one-sided type-I error at $\alpha=0.025$; Table 3
-reports power. LR, PP, and GB denote log-rank, Peto--Prentice, and
-Gehan--Breslow weights. OLR and Jung--Jeong columns are not used as benchmarks
+reports power. LR, PP, and GB denote log-rank, Peto-Prentice, and
+Gehan-Breslow weights. OLR and Jung-Jeong columns are not used as benchmarks
 for this implementation because the manuscript evaluates the three Zhao
 extended tests, not the ordinary unadjusted log-rank or the separate
-Jung--Jeong clustered statistic. Those columns remain useful contextual
+Jung-Jeong clustered statistic. Those columns remain useful contextual
 comparators in the source paper but would answer a different validation
 question; they are not being claimed as reproduced by `zhao_rank_test()`.
 
@@ -598,21 +598,21 @@ manuscript_zhao_plot(zhao)
 
 ```{r}
 #| label: tbl-zhao-null-sd
-#| tbl-cap: "Comparison with Zhao Table 1: empirical SD of the standardized null statistic at medium heterogeneity. LR = log-rank, PP = Peto--Prentice, and GB = Gehan--Breslow. Parentheses contain simulation Monte Carlo SEs; an asterisk marks a discrepancy."
+#| tbl-cap: "Comparison with Zhao Table 1: empirical SD of the standardized null statistic at medium heterogeneity. LR = log-rank, PP = Peto-Prentice, and GB = Gehan-Breslow. Parentheses contain simulation Monte Carlo SEs; an asterisk marks a discrepancy."
 knitr::kable(manuscript_zhao_table(zhao, "table1"), booktabs = TRUE,
              align = c("l", "l", rep("r", 6)))
 ```
 
 ```{r}
 #| label: tbl-zhao-type1
-#| tbl-cap: "Comparison with Zhao Table 2: one-sided type-I error probabilities. LR = log-rank, PP = Peto--Prentice, and GB = Gehan--Breslow. Published integers are divided by 1000 as explained in the text. Parentheses contain simulation Monte Carlo SEs; an asterisk marks a discrepancy."
+#| tbl-cap: "Comparison with Zhao Table 2: one-sided type-I error probabilities. LR = log-rank, PP = Peto-Prentice, and GB = Gehan-Breslow. Published integers are divided by 1000 as explained in the text. Parentheses contain simulation Monte Carlo SEs; an asterisk marks a discrepancy."
 knitr::kable(manuscript_zhao_table(zhao, "table2"), booktabs = TRUE,
              align = c("l", "l", rep("r", 6)))
 ```
 
 ```{r}
 #| label: tbl-zhao-power
-#| tbl-cap: "Comparison with Zhao Table 3: one-sided power probabilities. LR = log-rank, PP = Peto--Prentice, and GB = Gehan--Breslow. Parentheses contain simulation Monte Carlo SEs; an asterisk marks a discrepancy. The log-time shift is 0.25 or 0.5 for all four distributions."
+#| tbl-cap: "Comparison with Zhao Table 3: one-sided power probabilities. LR = log-rank, PP = Peto-Prentice, and GB = Gehan-Breslow. Parentheses contain simulation Monte Carlo SEs; an asterisk marks a discrepancy. The log-time shift is 0.25 or 0.5 for all four distributions."
 knitr::kable(manuscript_zhao_table(zhao, "table3"), booktabs = TRUE,
              align = c("l", "l", "r", rep("r", 6)))
 ```
@@ -638,7 +638,7 @@ frailty. Under the null, treatment and control gaps have the same distribution.
 The corresponding PSG-bout data should not be assumed to satisfy the IID gap
 assumption required for a renewal interpretation of PSH; stage dependence,
 subject frailty, and bout-state persistence are precisely reasons to prefer the
-Wang--Chang estimand and clustered inference there.
+Wang-Chang estimand and clustered inference there.
 Power alternatives multiply treatment gaps by 1.25 (longer bouts) or 0.80
 (shorter bouts). The script evaluates $G_0^*$, $G_1^*$, Zhao pooled-risk
 sensitivity analyses, and paired label permutations where appropriate.
@@ -694,8 +694,8 @@ these checks do not validate every rank test or competing-risk procedure.
 
 The main contribution of `recurSurvTests` is not a claim that one estimator or
 test fits every recurrent-event question. Rather, it makes the choice visible:
-PSH/pooled KM for a renewal/IID gap interpretation, Wang--Chang for marginal
-gap-time survival with event-count weighting, Luo--Huang for the corresponding
+PSH/pooled KM for a renewal/IID gap interpretation, Wang-Chang for marginal
+gap-time survival with event-count weighting, Luo-Huang for the corresponding
 weighted-risk-set rank comparison, Zhao-style sensitivity analyses, and RCIF
 methods for recurrent competing risks. The reference checks connect the new
 implementations to legacy software, while the simulation infrastructure makes

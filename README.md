@@ -48,26 +48,26 @@ estimands, formulas, implementation details, and a worked example.
 ## Relationship to existing software
 
 This package is a transparent reference collection, not a claim that every
-component is a new algorithm. `newTestSurvRec` already provides Wang--Chang and
-Pena--Strawderman--Hollander recurrent-curve machinery, so `wc_surv()` and
+component is a new algorithm. `newTestSurvRec` already provides Wang-Chang and
+Pena-Strawderman-Hollander recurrent-curve machinery, so `wc_surv()` and
 `psh_surv()` are compatibility/reference implementations. `reda` and `mets`
 focus on calendar-time mean cumulative recurrent-event functions; those are a
 different estimand and are deliberately not implemented here. The package's
-distinct scope is the Luo--Huang `G_rho*` two- and K-group tests, the separately
+distinct scope is the Luo-Huang `G_rho*` two- and K-group tests, the separately
 labeled Zhao score/variance variants and simulations, and the
-Sivadasan--Sankaran recurrent cause-specific incidence methods. See the
+Sivadasan-Sankaran recurrent cause-specific incidence methods. See the
 [full scope audit](docs/related-software.md) for the comparison and sources.
 
 In practical terms, use `reda::mcfDiff()` or
 `mets::recurrent_marginal()`/`mets::test_logrankRecurrent()` for calendar-time
 marginal event means and their AUC/logrank-type comparisons. Use this package
 when the target is a marginal **gap-time survival distribution**, a
-Luo--Huang/Zhao recurrent-gap rank contrast, or a recurrent competing-cause
+Luo-Huang/Zhao recurrent-gap rank contrast, or a recurrent competing-cause
 incidence curve. The package is intended to make those distinctions and their
 variance choices inspectable, not to duplicate the mean-function ecosystem.
 
 The Zhao implementation is particularly useful because it applies LR,
-Gehan--Breslow, and Peto--Prentice weighting to Wang--Chang survival curves
+Gehan-Breslow, and Peto-Prentice weighting to Wang-Chang survival curves
 while retaining subject-level recurrent-gap dependence through robust residual
 covariance. It therefore answers a different question from a mean-function
 test, and exposes the paper's competing variance conventions for sensitivity

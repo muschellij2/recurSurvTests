@@ -1,0 +1,5 @@
+"estimator","interval","joint_coverage","mc_se"
+"psh","pointwise",1,0
+"wc","pointwise",1,0
+"psh","simultaneous",1,0
+"wc","simultaneous",1,0

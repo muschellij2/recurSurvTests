@@ -213,7 +213,7 @@
 \title{Recurrent Gap-Time Survival, Rank Tests, and Competing Risks
 Analysis: \texttt{recurSurvTests}}
 \author{John Muschelli}
-\date{2026-09-23}
+\date{}
 \begin{document}
 \maketitle
 
@@ -224,12 +224,12 @@ Nonparametric recurrent-event survival curves are available in the
 statistical literature, but openly available implementations of tests
 for differences between those curves have been limited.
 \texttt{recurSurvTests} provides R implementations for estimating and
-comparing recurrent curves on their intended scales: (i) Wang--Chang
-marginal recurrent gap-time survival and Luo--Huang weighted-risk-set
-rank tests, (ii) the Pena--Strawderman--Hollander generalized
+comparing recurrent curves on their intended scales: (i) Wang-Chang
+marginal recurrent gap-time survival and Luo-Huang weighted-risk-set
+rank tests, (ii) the Peña-Strawderman-Hollander generalized
 product-limit estimator, (iii) a separately documented Zhao et
 al.~extended-rank implementation with a sensitivity variance path, and
-(iv) Sivadasan--Sankaran recurrent cause-specific cumulative-incidence
+(iv) Sivadasan-Sankaran recurrent cause-specific cumulative-incidence
 functions and their Wald-type comparison. The package is designed to
 enable tests whose risk sets, weights, and null hypotheses correspond to
 the curve an investigator has chosen to estimate. Because recurrent
@@ -238,12 +238,11 @@ competing-risk incidence are distinct estimands, the software makes
 those choices explicit rather than treating their tests as substitutes.
 This manuscript documents the methods, data conventions, numerical
 checks against prior R implementations where available, and reproducible
-simulation designs for published-style and polysomnography-shaped
-settings. Available simulation cells are reported with Monte Carlo
-uncertainty and explicit missing-cell indicators; the manuscript
-regenerates its comparisons when additional completed runs are supplied.
+simulation designs. We provide a comparison to published tables and also
+show an example similar to data analysis from polysomnography sleep data
+analyzing sleep bouts.
 
-\textbf{Keywords:} recurrent events, gap time, Wang--Chang estimator,
+\textbf{Keywords:} recurrent events, gap time, Wang-Chang estimator,
 weighted risk set, product-limit estimator, competing risks, R
 
 \subsection{Introduction}\label{introduction}
@@ -267,32 +266,101 @@ curve and the estimand targeted by its comparison must be aligned before
 a reported p-value has its intended interpretation.
 
 Substantial software already supports recurrent-event regression. For
-example, the Andersen--Gill \citep{andersen1982}, PWP
-\citep{prentice1981}, and related Cox-model formulations provide score,
-Wald, and likelihood-based inference for regression coefficients;
-mixed-effects and frailty extensions are available in \texttt{coxme}
-\citep{coxme} and \texttt{frailtypack} \citep{frailtypack}. These are
-important tools when a conditional covariate or frailty effect is the
-scientific target. They do not, however, supply a nonparametric global
-test for equality of an estimated recurrent gap-time survival curve.
-Existing recurrent-curve R software has also made important
-contributions: \texttt{survrec} \citep{survrec} includes Wang--Chang and
-Pena--Strawderman--Hollander estimators, and \texttt{newTestSurvRec}
-\citep{newtestsurvrec} includes recurrent-event curve estimators and
-rank-test procedures. Their available estimators and testing paths do
-not all target the same curve, so a test cannot be transferred between
-them solely on the basis of a shared label such as ``recurrent
-survival.''
+example, the Andersen-Gill \citep{andersen1982},
+Prentice-Williams-Peterson (PWP) \citep{prentice1981}, and related
+Cox-model formulations provide score, Wald, and likelihood-based
+inference for regression coefficients; mixed-effects and frailty
+extensions are available in \texttt{coxme} \citep{coxme} and
+\texttt{frailtypack} \citep{frailtypack}. These are important tools when
+a conditional covariate or frailty effect is the scientific target. They
+do not, however, supply a nonparametric global test for equality of an
+estimated recurrent gap-time survival curve or tests contrasting such
+survival curves across groups. Existing recurrent-curve R software has
+also made important contributions: \texttt{survrec} \citep{survrec}
+includes Wang-Chang and Peña-Strawderman-Hollander estimators, and
+\texttt{newTestSurvRec} \citep{newtestsurvrec} includes recurrent-event
+curve estimators and rank-test procedures. Their available estimators
+and testing paths do not all target the same curve, so a test cannot be
+transferred between them solely on the basis of a shared label such as
+``recurrent survival.''
 
 \texttt{recurSurvTests} fills the resulting open-source implementation
 gap by enabling tests that correspond to the recurrent curves under
 analysis. It is not a general recurrent-event modeling framework. Its
 primary aim is to let users estimate a clearly defined recurrent curve
 and conduct a comparison whose risk set, weighting, and null hypothesis
-match that curve--in particular, the Wang--Chang marginal gap-time
-survival curve and its Luo--Huang weighted-risk- set comparison. The
+match that curve--in particular, the Wang-Chang marginal gap-time
+survival curve and its Luo-Huang weighted-risk- set comparison. The
 package also keeps alternative estimands explicit, rather than
 presenting their tests as interchangeable.
+
+\subsubsection{\texorpdfstring{Relationship to
+\texttt{newTestSurvRec::Dif.Surv.Rec()}}{Relationship to newTestSurvRec::Dif.Surv.Rec()}}\label{relationship-to-newtestsurvrecdif.surv.rec}
+
+The existence of \texttt{newTestSurvRec::Dif.Surv.Rec()} does not make
+the Zhao and Luo-Huang implementations redundant, but the functions
+should not be treated as interchangeable. A source-level inspection of
+\texttt{Dif.Surv.Rec()} shows the following distinctions:
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Component
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\texttt{newTestSurvRec::Dif.Surv.Rec()}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Zhao et al.~(2020) / \texttt{zhao\_rank\_test()}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Curve/risk-set path & The function calls
+\texttt{survfitr(...,\ type\ =\ "pe")}, i.e.~its displayed test path is
+built from the Peña-Strawderman-Hollander/GPLE-style pooled gap-record
+fit. The package also contains a separate Wang-Chang fitter, but that is
+not the estimator selected inside this function. & Uses Wang-Chang
+weighted risk and event masses, with each subject's eligible gaps scaled
+by \(1/m_i^*\). \\
+Score numerator & At each pooled event time, group-1 events minus the
+pooled-risk expected group-1 count. & The same broad
+observed-minus-expected rank-test idea, but with the Wang-Chang weighted
+counts and the score in Equation 3. \\
+Weight families & Provides a broad family (\texttt{LRrec},
+\texttt{Grec}, \texttt{TWrec}, \texttt{PPrec}, \texttt{PMrec},
+\texttt{PPrrec}, \texttt{HFrec}, \texttt{CMrec}, \texttt{Mrec}). For
+example, \texttt{Grec} uses the total risk-set size and \texttt{TWrec}
+its square root. & Implements the three paper weights LR, GB, and PP. In
+the paper's notation these are \(1\), \(n/Y^*(t)\), and the pooled
+Wang-Chang survival estimate \(S^*(t)\), respectively. Thus the label
+``GB'' is not evidence that the \texttt{Grec} calculation is the same
+test. \\
+Variance & Uses an event-time variance term based on pooled and group
+risk-set/event counts, then sums weighted contributions. It does not use
+Zhao's subject residual vector. & Uses subject-level residuals from
+Equation 6 and the robust variance
+\(\widehat V^* = \sum_i \hat\epsilon_i^{*2}\) in Equation 7. The
+pooled-risk and group-specific Equation 6 conventions are retained
+separately here. \\
+Output interpretation & A family of recurrent-curve tests whose default
+curve path is PSH/GPLE-style. & A test of equality of Wang-Chang
+marginal recurrent gap-time survival distributions, with a
+paper-specific robust variance construction. \\
+\end{longtable}
+}
+
+Consequently, \texttt{Dif.Surv.Rec(type\ =\ "LRrec")} is a useful
+historical recurrent curve rank test and an important reference
+comparison, but it is not an exact implementation of Zhao's Equation
+3--7 construction. In particular, matching the word ``log-rank'' does
+not resolve the curve estimator, event weighting, or within-subject
+variance choice. The manuscript's numerical checks therefore compare the
+curve estimators separately and do not use \texttt{Dif.Surv.Rec()} as a
+validation oracle for \texttt{zhao\_rank\_test()}.
 
 Three scientific targets are kept separate throughout:
 
@@ -301,29 +369,34 @@ Three scientific targets are kept separate throughout:
 \tightlist
 \item
   Marginal recurrent \textbf{gap-time survival}, the target of
-  Wang--Chang and the Luo--Huang rank test.
+  Wang-Chang and the Luo-Huang rank test.
 \item
   Mean cumulative recurrent-event burden on the \textbf{calendar-time}
   scale, which is not implemented here.
 \item
   Recurrent cause-specific cumulative incidence for \textbf{gap times},
-  the target of the Sivadasan--Sankaran estimators.
+  the target of the Sivadasan-Sankaran estimators.
 \end{enumerate}
 
 This separation avoids calling all recurrent-event comparisons
-``log-rank tests.'' In particular, the METRON recurrent-CIF procedure is
-a weighted contrast/Wald-type procedure and is not a log-rank test.
+``log-rank tests.'' In this manuscript, CIF means cumulative-incidence
+function, and RCIF means recurrent cumulative-incidence function. METRON
+is the journal \emph{METRON}, where the Sivadasan-Sankaran recurrent-CIF
+test was published; that procedure is a weighted contrast/Wald-type
+procedure and is not a log-rank test.
 
 \subsection{Data convention and software
 design}\label{data-convention-and-software-design}
 
 All gap-time survival functions accept a long data frame with one row
-per observed gap. For subject \(i\), rows are ordered by episode.
-Completed gaps have \(\delta_{ij}=1\); the final row is the terminal
-right-censored gap with \(\delta_{ij}=0\). The observed gap duration is
-\(Y_{ij}\). An optional \texttt{episode} column makes the ordering
-explicit. This convention permits a participant with no completed
-recurrence to contribute a single terminal censored gap.
+per observed gap. If an \texttt{episode} column is supplied, the package
+sorts rows within subject by that column; without it, the existing
+within-subject row order is used. Completed gaps have \(\delta_{ij}=1\);
+the final row is the terminal right-censored gap with \(\delta_{ij}=0\).
+The observed gap duration is \(Y_{ij}\). An optional \texttt{episode}
+column makes the ordering explicit. This convention permits a
+participant with no completed recurrence to contribute a single terminal
+censored gap.
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -350,12 +423,12 @@ comparison possible.
 \subsection{Recurrent gap-time survival
 estimators}\label{recurrent-gap-time-survival-estimators}
 
-\subsubsection{Wang--Chang marginal
-survival}\label{wangchang-marginal-survival}
+\subsubsection{Wang-Chang marginal
+survival}\label{wang-chang-marginal-survival}
 
 Let \(m_i^*=1\) for a participant with no complete recurrence and
 otherwise let \(m_i^*\) equal the number of completed gaps. The
-Wang--Chang weighted risk and event increments \citep{wang1999, luo2011}
+Wang-Chang weighted risk and event increments \citep{wang1999, luo2011}
 are
 
 \[
@@ -379,11 +452,10 @@ representation shown by \citet{luo2011} to be algebraically equivalent
 to the estimator of \citet{wang1999}.
 
 \subsubsection{PSH and pooled
-Kaplan--Meier}\label{psh-and-pooled-kaplanmeier}
+Kaplan-Meier}\label{psh-and-pooled-kaplan-meier}
 
-The Pena--Strawderman--Hollander (PSH) generalized product-limit
-estimator \citep{pena2001} uses all observed gap records with unit
-weight:
+The Peña-Strawderman-Hollander (PSH) generalized product-limit estimator
+\citep{pena2001} uses all observed gap records with unit weight:
 
 \[
 R_{PSH}(t)=\sum_{i,j}I(Y_{ij}\geq t),\qquad
@@ -396,16 +468,33 @@ dN_{PSH}(t)=\sum_{i,j}I(Y_{ij}=t,\delta_{ij}=1),
 \]
 
 Therefore \texttt{psh\_surv()} is numerically identical to an ordinary
-pooled Kaplan--Meier calculation on the same long gap records, including
+pooled Kaplan-Meier calculation on the same long gap records, including
 terminal censored gaps. They do not diverge merely because censoring is
 increased. They can appear to differ only if ``KM'' refers to a
 different data construction, for example first gaps only, a
 calendar-time analysis, different treatment of terminal censoring, or
 weights. PSH has a renewal/IID gap-model interpretation; that
-interpretation is distinct from the Wang--Chang marginal estimand.
+interpretation is distinct from the Wang-Chang marginal estimand.
+
+In practice, PSH is most defensible when the scientific target is the
+distribution of an exchangeable/IID inter-occurrence time under a
+renewal model (with independent censoring), or when a pooled gap-record
+curve is being shown explicitly as a descriptive event-weighted
+quantity. It is not a general replacement for Wang-Chang: subject
+frailty, dependence of later gaps on earlier gaps, or informative event
+counts causes participants with more events to contribute more gap
+records and changes the target. In those settings, \texttt{wc\_surv()}
+is preferable for a marginal gap-time survival target, with
+subject-level bootstrap inference. PSH can still be reported as a
+sensitivity curve, but it should be labeled as the pooled/renewal
+estimand rather than as a generic recurrent Kaplan-Meier estimate. The
+ordinary \texttt{survival::survfit()} curve on the same long records is
+numerically the same pooled product-limit calculation; PSH's value is
+the recurrent-event interpretation and its explicit renewal assumptions,
+not a different product-limit formula.
 
 The legacy PSH implementations return an independence-style no-ties
-Greenwood/Nelson--Aalen approximation,
+Greenwood/Nelson-Aalen approximation,
 \(\widehat S_{PSH}(t)^2\sum_{u\leq t}dN(u)/R(u)^2\). It is not generally
 appropriate when within-subject gaps are dependent or event counts are
 informative. In such settings, clustered uncertainty methods are needed;
@@ -417,16 +506,20 @@ intervals}\label{subject-bootstrap-confidence-intervals}
 \texttt{recurrent\_surv\_ci()} resamples complete participant histories
 and refits either curve. This is required because recurrent gaps from
 one participant are dependent, and because the WC weights are functions
-of the complete history. The default percentile intervals are pointwise:
-at a pre-specified time \(t\), they target
-\(P\{S(t)\in CI(t)\}=1-\alpha\). They are the conventional uncertainty
-summary for a plotted curve, but do not support a joint claim about
-every point of the curve. For that purpose,
-\texttt{interval\ =\ "simultaneous"} uses a subject-bootstrap max-\(t\)
-critical value to form a band over an explicitly supplied finite time
-grid. The associated coverage simulation estimates pointwise and joint
-coverage separately; its results remain pending until the configured run
-has completed.
+of the complete history. The \texttt{ci\_method} argument applies to the
+recurrent-survival curve CI functions (\texttt{recurrent\_surv\_ci()}
+and the corresponding curve-contrast workflow): \texttt{"bootstrap"}
+gives subject-bootstrap percentile intervals or max-\(t\) bands, whereas
+\texttt{"normal"} gives the legacy independence-style pointwise
+approximation. The default percentile intervals are pointwise: at a
+pre-specified time \(t\), they target \(P\{S(t)\in CI(t)\}=1-\alpha\).
+They are the conventional uncertainty summary for a plotted curve, but
+do not support a joint claim about every point of the curve. For that
+purpose, \texttt{interval\ =\ "simultaneous"} uses a subject-bootstrap
+max-\(t\) critical value to form a band over an explicitly supplied
+finite time grid. The associated coverage simulation estimates pointwise
+and joint coverage separately; its results remain pending until the
+configured run has completed.
 
 The default number of bootstrap draws is \(B=999\), consistent with
 common bootstrap and permutation practice. It is adequate for routine
@@ -436,11 +529,10 @@ max-\(t\) critical values, the documentation recommends \(B\geq 2000\)
 when computation permits, yielding about 50 draws in each percentile
 tail and reducing Monte-Carlo variation.
 
-The coverage statement must match the reported quantity. A pointwise
-95\% interval has approximately 95\% coverage for \(S(t_0)\) at one
-pre-specified gap time \(t_0\). Drawing such intervals at multiple times
-does not yield 95\% joint coverage of the full curve. The simultaneous
-max-\(t\) band instead targets
+A pointwise 95\% interval has approximately 95\% coverage for \(S(t_0)\)
+at one pre-specified gap time \(t_0\). Drawing such intervals at
+multiple times does not yield 95\% joint coverage of the full curve. The
+simultaneous max-\(t\) band instead targets
 \(P\{S(t)\ \text{is covered for every }t\in\mathcal T\}\approx 0.95\)
 for the user-supplied finite grid \(\mathcal T\); it is correspondingly
 wider. Neither output is a confidence interval for a survival quantile
@@ -467,7 +559,7 @@ resampling for a \emph{selected survival quantile}, such as a median,
 and returns a \texttt{boot} object for subsequent interval calculation.
 Thus bootstrap inference was not absent from earlier R work. The
 standard errors returned by the inspected \texttt{newTestSurvRec} WC and
-PSH fitters are the independence-style Nelson--Aalen/Greenwood
+PSH fitters are the independence-style Nelson-Aalen/Greenwood
 approximation,
 
 \[
@@ -482,23 +574,22 @@ neither bootstrap intervals nor simultaneous bands. The same
 independence-style form, evaluated with this package's own event and
 risk increments, is available with \texttt{ci\_method\ =\ "normal"} to
 make the legacy-style capability explicit. It reproduces the PSH
-standard-error calculation on the same long records; for WC it is an
-analogous approximation for the Wang--Chang-equivalent weighted risk
-set, not a claim of numerical replication of another package's variance
-code. It should not be relied on for dependent recurrent gaps or
-informative event counts, because the displayed variance does not
-account for subject-level clustering. In contrast,
-\texttt{ci\_method\ =\ "bootstrap"} provides a whole-curve
-subject-bootstrap workflow: percentile intervals for fixed times or a
-max-\(t\) band for a finite grid. The resampling itself is conceptually
-straightforward; its value here is a uniform analyst-facing tool that
-makes the resampling unit, estimator, time grid, and coverage claim
-explicit and consistent across WC and PSH analyses.
+standard-error calculation on the same long records, and should not be
+relied on for dependent recurrent gaps or informative event counts,
+because the displayed variance does not account for subject-level
+clustering. In contrast, \texttt{ci\_method\ =\ "bootstrap"} provides a
+whole-curve subject-bootstrap workflow: percentile intervals for fixed
+times or a max-\(t\) band for a finite grid. The resampling itself is
+conceptually straightforward; its value here is a uniform analyst-facing
+tool that makes the resampling unit, estimator, time grid, and coverage
+claim explicit and consistent across WC and PSH analyses. For a more
+complex bootstrap procedure (e.g.~nested), users must bootstrap the data
+explicitly and then fit the models.
 
 \subsubsection{Comparing curves}\label{comparing-curves}
 
-The following executable example compares Wang--Chang, PSH, and an
-independently computed pooled Kaplan--Meier curve from \texttt{survival}
+The following executable example compares Wang-Chang, PSH, and an
+independently computed pooled Kaplan-Meier curve from \texttt{survival}
 \citep{survival} on the same records. It illustrates the estimands,
 rather than reproducing a figure from a source paper.
 
@@ -522,7 +613,7 @@ rather than reproducing a figure from a source paper.
 \FunctionTok{legend}\NormalTok{(}\StringTok{"topright"}\NormalTok{, }\FunctionTok{c}\NormalTok{(}\StringTok{"Wang{-}Chang"}\NormalTok{, }\StringTok{"PSH / pooled KM"}\NormalTok{),}
        \AttributeTok{col =} \FunctionTok{c}\NormalTok{(}\StringTok{"black"}\NormalTok{, }\StringTok{"firebrick"}\NormalTok{), }\AttributeTok{lty =} \DecValTok{1}\SpecialCharTok{:}\DecValTok{2}\NormalTok{, }\AttributeTok{bty =} \StringTok{"n"}\NormalTok{)}
 \FunctionTok{plot}\NormalTok{(grid, }\FunctionTok{step\_at}\NormalTok{(wc, grid) }\SpecialCharTok{{-}} \FunctionTok{step\_at}\NormalTok{(psh, grid), }\AttributeTok{type =} \StringTok{"s"}\NormalTok{,}
-     \AttributeTok{xlab =} \StringTok{"Gap time"}\NormalTok{, }\AttributeTok{ylab =} \StringTok{"Wang{-}{-}Chang minus PSH/KM"}\NormalTok{)}
+     \AttributeTok{xlab =} \StringTok{"Gap time"}\NormalTok{, }\AttributeTok{ylab =} \StringTok{"Wang{-}Chang minus PSH/KM"}\NormalTok{)}
 \FunctionTok{abline}\NormalTok{(}\AttributeTok{h =} \DecValTok{0}\NormalTok{, }\AttributeTok{lty =} \DecValTok{2}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
@@ -543,54 +634,82 @@ survival on the example records, and their difference.}
 \subsection{Rank tests and paired
 visits}\label{rank-tests-and-paired-visits}
 
-\texttt{wc\_logrank()} implements the two-group Luo--Huang
+\texttt{wc\_logrank()} implements the two-group Luo-Huang
 weighted-risk-set \citep{luo2011} \(G_\rho^*\) statistic. At each event
 time it contrasts weighted observed events with their group-specific
 weighted risk-set expectation. With \(\rho=0\), it is the recurrent
-gap-time log-rank analogue; \(\rho=1\) gives a Peto--Prentice-type
-weight. The variance is based on subject-level martingale-style
-contributions to retain within-subject gap dependence.
+gap-time log-rank analogue. Its implementation uses
+\(w(t)=\widehat S_{WC}(t-)^\rho\), where the pooled Wang-Chang survival
+estimate is evaluated just before the event time. Thus \(\rho=1\)
+downweights late events in proportion to the estimated survival
+remaining, a Peto-Prentice-type weight; it is not the same as the
+log-rank weight \(w(t)=1\), which gives every event time equal weight.
+The variance is built from subject-level contributions to the score:
+each subject's observed-minus-expected weighted event increments are
+summed across that subject's gaps, preserving their covariance rather
+than treating the gap rows as independent.
 
 \texttt{zhao\_rank\_test()} is separate. It implements the extended LR,
-Gehan--Breslow, and Peto--Prentice score construction described by
+Gehan-Breslow, and Peto-Prentice score construction described by
 \citet{zhao2020}. Its default \texttt{pooled\_risk} residual is assessed
-by the simulations below; current results do not establish
-published-table reproduction. The group-risk denominator printed in Zhao
-et al.'s Equation 6 is retained as the explicit \texttt{zhao\_eq6}
+by the simulations below; current results are diagnostics of this
+implementation and do not establish byte-for-byte reproduction of the
+published tables. The group-risk denominator printed in Zhao et al.'s
+Equation 6 is retained as the explicit \texttt{zhao\_eq6}
 sensitivity/reproduction path. Neither function should be described as
 an exact substitute for the other.
 
+There is an unresolved implementation ambiguity in the published
+description. Equation 6 appears to define the residual denominator using
+the risk set of the subject's own group, whereas the pooled-risk
+construction uses the pooled weighted risk set. These choices produce
+different subject residuals and hence different robust variance
+estimates even when the score numerator is unchanged. The package
+therefore labels them separately
+(\texttt{variance\_method\ =\ "pooled\_risk"} and \texttt{"zhao\_eq6"})
+and does not silently treat one as the exact published convention. We
+have drafted a clarification request to the authors asking which
+denominator and finite-sample scaling were used in the published
+simulations; until that is resolved, the comparisons below are
+implementation diagnostics rather than a claim of exact reproduction.
+
 For two paired visits per participant,
-\texttt{wc\_paired\_permutation()} swaps labels within participant pairs
-and recalculates \(G_\rho^*\). Its p-value tests the within-pair
-label-exchangeability null. The independent-arm analytical p-value from
-\texttt{wc\_logrank()} is returned for context but is not a paired
-analysis.
+\texttt{wc\_paired\_permutation()} randomly swaps visit labels within
+participant pairs and recalculates \(G_\rho^*\). Its p-value tests the
+within-pair label-exchangeability null. The independent-arm analytical
+p-value from \texttt{wc\_logrank()} is returned for context but is not a
+paired analysis. This is the package's permutation-based two-group
+procedure; the K-group extension currently has an analytical score test
+(\texttt{wc\_logrank\_k()}), not a general K-group label-permutation
+wrapper.
 
 \subsection{Recurrent competing risks}\label{recurrent-competing-risks}
 
 \texttt{ss\_rcif()} implements recurrent cause-specific
-cumulative-incidence functions following \citet{sivadasan2023}. The
-default shared weighting keeps pooled and cause-specific increments
-additive. \texttt{cause\_weighting\ =\ "literal\_eq15"} is retained as a
-sensitivity/reproduction option because literal use of the printed
-Equation 15 denominator can yield nonadditive increments.
+cumulative-incidence functions (RCIFs) following \citet{sivadasan2023}.
+The default shared weighting uses the same subject/event-count
+denominator for the pooled and cause-specific processes, so the
+cause-specific increments add to the pooled increment. The 2023 paper's
+printed Equation 15 instead uses a cause-specific \(m_{il}\) denominator
+and an indicator for subjects with at least two events of that cause.
+Taken literally, that expression can make the cause-specific increments
+nonadditive. The \texttt{cause\_weighting\ =\ "literal\_eq15"} option is
+retained for sensitivity and formula-reproduction purposes; it is not
+the default because additivity is then not guaranteed.
 
 \texttt{ss\_rcif\_equal\_causes\_test()} is a subject-bootstrap Wald
-reconstruction of the METRON equal-cause test \citep{sisuma2022}. It
-compares integrated RCIF contrasts and must not be called a log-rank
-test.
+reconstruction of the equal-cause RCIF test proposed by Sivadasan and
+Sankaran in \emph{METRON} (the journal) \citep{sisuma2022}. It compares
+integrated contrasts \(F_l(t)-F(t)/k\) across causes. It is a weighted
+cumulative-incidence contrast with a bootstrap covariance estimate, not
+a log-rank test, and its reconstruction should not be presented as
+byte-for-byte author software.
 
 \subsection{Validation against prior
 implementations}\label{validation-against-prior-implementations}
 
-The following checks rerun the continuous-data examples from the
-reference vignettes with fixed seeds. Each row compares the same
-event-time grid and survival values with the indicated installed package
-\citep{survrec, newtestsurvrec}. Optional packages are not downloaded
-during rendering; missing installations produce an explicit unavailable
-result. The package versions and discrepancies are computed at render
-time, not copied from previous output.
+Each row compares the same event-time grid and survival values with the
+indicated installed package \citep{survrec, newtestsurvrec}.
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -651,64 +770,35 @@ These are software comparisons for the estimators of \citet{wang1999}
 and \citet{pena2001}. They are not reproductions of the simulation
 tables in those papers. In particular, \texttt{newTestSurvRec}'s
 \texttt{LRrec} pathway is associated with PSH-style estimation and is
-not a numerical reference for the Luo--Huang rank test.
+not a numerical reference for the Luo-Huang rank test.
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{rank\_example }\OtherTok{\textless{}{-}} \FunctionTok{do.call}\NormalTok{(rbind, }\FunctionTok{lapply}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{1}\NormalTok{), }\ControlFlowTok{function}\NormalTok{(rho) \{}
-\NormalTok{  fit }\OtherTok{\textless{}{-}} \FunctionTok{wc\_logrank}\NormalTok{(gaps, }\AttributeTok{group =} \StringTok{"arm"}\NormalTok{, }\AttributeTok{episode =} \StringTok{"episode"}\NormalTok{, }\AttributeTok{rho =}\NormalTok{ rho)}
-  \FunctionTok{data.frame}\NormalTok{(}\AttributeTok{Method =} \FunctionTok{paste0}\NormalTok{(}\StringTok{"Luo{-}Huang, rho = "}\NormalTok{, rho),}
-             \AttributeTok{z =}\NormalTok{ fit}\SpecialCharTok{$}\NormalTok{z, }\AttributeTok{p\_value =}\NormalTok{ fit}\SpecialCharTok{$}\NormalTok{p.value)}
-\NormalTok{\}))}
-\NormalTok{knitr}\SpecialCharTok{::}\FunctionTok{kable}\NormalTok{(rank\_example, }\AttributeTok{digits =} \DecValTok{4}\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
-
-{
-
-\begin{longtable}[]{@{}lrr@{}}
-
-\caption{\label{tbl-rank-example}Executable rank-test example on the
-four-subject illustration. These values demonstrate the interface and
-are not simulation validation.}
-
-\tabularnewline
-
-\toprule\noalign{}
-Method & z & p\_value \\
-\midrule\noalign{}
-\endhead
-\bottomrule\noalign{}
-\endlastfoot
-Luo-Huang, rho = 0 & 1.9612 & 0.0499 \\
-Luo-Huang, rho = 1 & 1.7598 & 0.0784 \\
-
-\end{longtable}
-
-}
-
-\textbf{Published-benchmark placeholder for Wang--Chang and Luo--Huang.}
+\textbf{Published-benchmark placeholder for Wang-Chang and Luo-Huang.}
 The curve in Figure~\ref{fig-curves}, the independent pooled-KM check,
 and Table~\ref{tbl-reference-checks} provide reproducible estimator
-checks. Direct numerical reproduction of the original Wang--Chang and
-Luo--Huang simulation tables \citep{wang1999, luo2011} remains a
-separate validation task requiring a matched design and transcribed
-published benchmarks. Zhao's results below assess a different rank-test
-construction and cannot fill that role. The existing K-group PSG
-simulation is an application-specific extension check, not a
-reproduction of Luo--Huang's two-group study.
+checks. Direct numerical reproduction of the original Wang-Chang and
+Luo-Huang simulation tables \citep{wang1999, luo2011} remains a separate
+validation task requiring a matched design and transcribed published
+benchmarks. Zhao's results below assess a different rank-test
+construction and cannot fill that role. The existing K-group
+polysomnography (PSG) simulation is an application-specific extension
+check, not a reproduction of Luo-Huang's two-group study.
 
 \subsection{Simulation validation}\label{simulation-validation}
 
 \subsubsection{Zhao published-table
 comparison}\label{sec-zhao-validation}
 
-This section compares completed runs with the \textbf{New method}
+This section compares completed runs with the ``\textbf{New method}''
 columns of Tables 1--3 in \citet{zhao2020}. Table 1 reports the SD of
 the standardized null statistic; Table 2 reports one-sided type-I error
 at \(\alpha=0.025\); Table 3 reports power. LR, PP, and GB denote
-log-rank, Peto--Prentice, and Gehan--Breslow weights. OLR and
-Jung--Jeong columns are not used as benchmarks for this implementation.
+log-rank, Peto-Prentice, and Gehan-Breslow weights. OLR and Jung-Jeong
+columns are not used as benchmarks for this implementation because the
+manuscript evaluates the three Zhao extended tests, not the ordinary
+unadjusted log-rank or the separate Jung-Jeong clustered statistic.
+Those columns remain useful contextual comparators in the source paper
+but would answer a different validation question; they are not being
+claimed as reproduced by \texttt{zhao\_rank\_test()}.
 
 \texttt{data-raw/zhao-2020-table-simulations.R} defines 120 cells with
 four baseline distributions, three heterogeneity ranges, 100 subjects
@@ -720,14 +810,31 @@ intended numbers of simulated datasets are 100,000 per null cell and
 \(\exp(0.25)\) or \(\exp(0.5)\); for Weibull shape 2 these correspond to
 changes of 0.5 and 1 in \(-\log(\lambda)\).
 
-The baseline laws in the corrected generator match Table 1: exponential
-rate \(\exp(-4)\), Weibull shape 2 and scale \(\exp(4)\), log-normal
+The baseline in the corrected generator match Table 1: exponential rate
+\(\exp(-4)\), Weibull shape 2 and scale \(\exp(4)\), log-normal
 parameters \((\mu,\sigma)=(4,0.5)\), and log-logistic survival
-\(S(t)=\{1+[\exp(-4)t]^2\}^{-1}\). The local generator uses
+\(S(t)=\{1+[\exp(-4)t]^2\}^{-1}\). The study-specific generator uses
 administrative censoring. Zhao used \texttt{survsim::rec.ev.surv()}
 \citep{survsim} and discussed an additional noninformative censoring
 mechanism without full parameter details in Section 3. Thus matching
 baseline distributions does not establish identical simulation designs.
+
+The apparent Weibull parameter difference is only a parameterization
+issue: Zhao's Table 1 writes \(S(t)=\exp(-\lambda t^p)\) with \(p=2\)
+and \(\lambda=\exp(-8)\). Since an R Weibull distribution uses
+\(S(t)=\exp\{-(t/\text{scale})^p\}\), the corresponding scale is
+\(\lambda^{-1/p}=\exp(4)\), exactly the value used by the generator. The
+exponential implementation uses rate \(\exp(-4)\), so its mean is
+\(\exp(4)\); the log-normal uses \texttt{meanlog\ =\ 4}, and the
+corrected log-logistic inverse draw uses scale \(\exp(4)\) and shape
+parameter \(0.5\). A 200,000-draw source-level sanity check gives means
+approximately 54.6, 48.4, 61.9, and 85.5 days for the four
+distributions, respectively, consistent with the paper's stated
+approximate means 55, 48, 62, and 86. The remaining differences from
+Zhao's published simulations are therefore design differences (notably
+the \texttt{survsim} generator and incompletely specified censoring
+mechanism), not an unintended \texttt{exp(4)}/\texttt{exp(-4)} scale
+inversion.
 
 The reference CSV, \texttt{data-raw/zhao-2020-published-tables.csv}, was
 transcribed from pages 93--95 of the publisher PDF. \textbf{Table 2 has
@@ -736,7 +843,7 @@ as 27 and 25. We interpret these as 0.027 and 0.025, consistent with
 Section 3.2's nominal 0.025 level and interpretation. This is an
 explicit, unconfirmed correction; both raw printed values and
 interpreted probabilities are retained. Table 2 comparisons are
-conditional on it.
+conditional on this interpretation.
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -749,7 +856,7 @@ conditional on it.
 \end{Highlighting}
 \end{Shaded}
 
-At this render, \textbf{86 of 120 cells} are available, of which 86
+At this render, \textbf{108 of 120 cells} are available, of which 108
 satisfy the recorded design-eligibility checks. The variance convention
 recorded in these files is \textbf{pooled\_risk}. Availability is
 assessed from files, not scheduler status. Missing files are shown as
@@ -760,76 +867,20 @@ rejects mixtures of variance conventions and inconsistent settings. The
 \texttt{zhao\_eq6} comparison remains pending unless a separate,
 consistently configured result directory is supplied.
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{knitr}\SpecialCharTok{::}\FunctionTok{kable}\NormalTok{(zhao\_status)}
-\end{Highlighting}
-\end{Shaded}
-
-{
-
-\begin{longtable}[]{@{}
-  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0645}}
-  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0860}}
-  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1075}}
-  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1183}}
-  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0860}}
-  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0968}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.3226}}
-  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1183}}@{}}
-
-\caption{\label{tbl-zhao-completeness}Available and missing cells in the
-Zhao validation design. Discrepant counts use the exploratory Monte
-Carlo criterion below.}
-
-\tabularnewline
-
-\toprule\noalign{}
-\begin{minipage}[b]{\linewidth}\raggedright
-Table
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
-Planned
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
-Available
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
-Comparable
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
-Missing
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
-Excluded
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
-Replicates\_per\_available\_cell
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
-Discrepant
-\end{minipage} \\
-\midrule\noalign{}
-\endhead
-\bottomrule\noalign{}
-\endlastfoot
-1 & 12 & 9 & 9 & 3 & 0 & 100000 & 3 \\
-2 & 36 & 24 & 24 & 12 & 0 & 100000 & 4 \\
-3 & 72 & 53 & 53 & 19 & 0 & 10000 & 53 \\
-
-\end{longtable}
-
-}
-
-An earlier log-logistic generator used an incorrect scale and inverse
-transform, producing vastly too many recurrences. Those outputs cannot
-validate Zhao's design. Corrected runs carry
-\texttt{generator\_version\ =\ "zhao\_table1\_loglogistic\_v2"}; legacy
-log-logistic outputs are displayed as \emph{Excluded}. Existing results
-for the other three distributions are retained. Rerendering
-automatically incorporates newly completed, eligible cells, including
-all 120 when available.
+The cell-availability and design-eligibility counts are retained in the
+reproducibility artifacts, but are not presented as a scientific table
+in the manuscript. They are execution metadata rather than results for
+readers.
 
 \paragraph{Monte Carlo uncertainty and current
 findings}\label{monte-carlo-uncertainty-and-current-findings}
 
 For a rejection proportion \(\hat p\) based on \(B\) replicates, the
-Monte Carlo standard error is \(\{\hat p(1-\hat p)/B\}^{1/2}\). Local
-rejection-rate intervals use Wilson's formula. For empirical SDs in
-Table 1 we use the normal-theory approximation
+Monte Carlo standard error is \(\{\hat p(1-\hat p)/B\}^{1/2}\).
+Rejection-rate intervals use the Wilson score interval: with
+\(z=z_{1-\alpha/2}\), center \((\hat p+z^2/(2B))/(1+z^2/B)\) and
+half-width \(z\{\hat p(1-\hat p)/B+z^2/(4B^2)\}^{1/2}/(1+z^2/B)\). For
+empirical SDs in Table 1 we use the normal-theory approximation
 \(\operatorname{MCSE}(s)=s/\sqrt{2(B-1)}\); replicate-level fourth
 moments are unavailable, so this is approximate. A cell receives an
 asterisk when
@@ -848,11 +899,11 @@ cell without an asterisk is not proven equivalent. Nominal calibration
 is assessed separately in the exported CSV by exact binomial tests
 against 0.025, with Holm adjustment across the 36 planned Table 2 cells.
 
-Among the 86 comparable completed cells, \textbf{60 are discrepant}
+Among the 108 comparable completed cells, \textbf{79 are discrepant}
 under the criterion above.
 
-Across 53 available power cells, local minus published power ranges from
-\textbf{+0.46 to +33.44 percentage points}. These results require
+Across 72 available power cells, present minus published power ranges
+from \textbf{+0.46 to +33.44 percentage points}. These results require
 investigation of the generator/censoring design and variance convention
 before claiming published-table reproduction.
 
@@ -878,17 +929,18 @@ of Zhao's tables.
 
 }
 
-\caption{\label{fig-zhao-comparison}Published versus local Zhao
-simulation summaries. The dashed line is equality. Bars show local 95\%
-Monte Carlo intervals (normal approximation for SDs, Wilson intervals
-for rejection rates). Paper uncertainty and rounding also enter the
+\caption{\label{fig-zhao-comparison}Published versus study simulation
+summaries. The dashed line is equality. Bars show simulation 95\% Monte
+Carlo intervals (normal approximation for SDs, Wilson intervals for
+rejection rates). Paper uncertainty and rounding also enter the
 discrepancy screen. Only available, design-eligible cells are plotted.}
 
 \end{figure}%
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{knitr}\SpecialCharTok{::}\FunctionTok{kable}\NormalTok{(}\FunctionTok{manuscript\_zhao\_table}\NormalTok{(zhao, }\StringTok{"table1"}\NormalTok{))}
+\NormalTok{knitr}\SpecialCharTok{::}\FunctionTok{kable}\NormalTok{(}\FunctionTok{manuscript\_zhao\_table}\NormalTok{(zhao, }\StringTok{"table1"}\NormalTok{), }\AttributeTok{booktabs =} \ConstantTok{TRUE}\NormalTok{,}
+             \AttributeTok{align =} \FunctionTok{c}\NormalTok{(}\StringTok{"l"}\NormalTok{, }\StringTok{"l"}\NormalTok{, }\FunctionTok{rep}\NormalTok{(}\StringTok{"r"}\NormalTok{, }\DecValTok{6}\NormalTok{)))}
 \end{Highlighting}
 \end{Shaded}
 
@@ -897,16 +949,16 @@ discrepancy screen. Only available, design-eligible cells are plotted.}
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1494}}
   >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.0920}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.2069}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.0920}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1839}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.0920}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1839}}@{}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.2069}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.0920}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1839}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.0920}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1839}}@{}}
 
 \caption{\label{tbl-zhao-null-sd}Comparison with Zhao Table 1: empirical
-SD of the standardized null statistic at medium heterogeneity.
-Parentheses contain local Monte Carlo SEs; an asterisk marks a
-discrepancy.}
+SD of the standardized null statistic at medium heterogeneity. LR =
+log-rank, PP = Peto-Prentice, and GB = Gehan-Breslow. Parentheses
+contain simulation Monte Carlo SEs; an asterisk marks a discrepancy.}
 
 \tabularnewline
 
@@ -915,15 +967,15 @@ discrepancy.}
 Distribution
 \end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
 LR Zhao
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
 LR local (MCSE)
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
 PP Zhao
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
 PP local (MCSE)
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
 GB Zhao
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
 GB local (MCSE)
 \end{minipage} \\
 \midrule\noalign{}
@@ -936,7 +988,8 @@ weibull & 1.015 & 1.0306 (0.0023) * & 1.007 & 1.0051 (0.0022) & 1.003 &
 1.0035 (0.0022) \\
 lognormal & 1.009 & 1.0238 (0.0023) * & 1.006 & 1.0046 (0.0022) & 1.003
 & 1.0020 (0.0022) \\
-loglogistic & 1.009 & Pending & 0.997 & Pending & 0.998 & Pending \\
+loglogistic & 1.009 & Pending & 0.997 & 0.9997 (0.0022) & 0.998 &
+Pending \\
 
 \end{longtable}
 
@@ -944,7 +997,8 @@ loglogistic & 1.009 & Pending & 0.997 & Pending & 0.998 & Pending \\
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{knitr}\SpecialCharTok{::}\FunctionTok{kable}\NormalTok{(}\FunctionTok{manuscript\_zhao\_table}\NormalTok{(zhao, }\StringTok{"table2"}\NormalTok{))}
+\NormalTok{knitr}\SpecialCharTok{::}\FunctionTok{kable}\NormalTok{(}\FunctionTok{manuscript\_zhao\_table}\NormalTok{(zhao, }\StringTok{"table2"}\NormalTok{), }\AttributeTok{booktabs =} \ConstantTok{TRUE}\NormalTok{,}
+             \AttributeTok{align =} \FunctionTok{c}\NormalTok{(}\StringTok{"l"}\NormalTok{, }\StringTok{"l"}\NormalTok{, }\FunctionTok{rep}\NormalTok{(}\StringTok{"r"}\NormalTok{, }\DecValTok{6}\NormalTok{)))}
 \end{Highlighting}
 \end{Shaded}
 
@@ -953,17 +1007,18 @@ loglogistic & 1.009 & Pending & 0.997 & Pending & 0.998 & Pending \\
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1386}}
   >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1287}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0792}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1782}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0792}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1584}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0792}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1584}}@{}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0792}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1782}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0792}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1584}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0792}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1584}}@{}}
 
 \caption{\label{tbl-zhao-type1}Comparison with Zhao Table 2: one-sided
-type-I error probabilities. Published integers are divided by 1000 as
-explained in the text. Parentheses contain local Monte Carlo SEs; an
-asterisk marks a discrepancy.}
+type-I error probabilities. LR = log-rank, PP = Peto-Prentice, and GB =
+Gehan-Breslow. Published integers are divided by 1000 as explained in
+the text. Parentheses contain simulation Monte Carlo SEs; an asterisk
+marks a discrepancy.}
 
 \tabularnewline
 
@@ -972,17 +1027,17 @@ asterisk marks a discrepancy.}
 Heterogeneity
 \end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
 Distribution
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
 LR Zhao
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
 LR local (MCSE)
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
 PP Zhao
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
 PP local (MCSE)
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
 GB Zhao
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
 GB local (MCSE)
 \end{minipage} \\
 \midrule\noalign{}
@@ -1003,16 +1058,16 @@ medium & weibull & 0.027 & 0.0285 (0.0005) & 0.026 & 0.0259 (0.0005) &
 0.025 & 0.0263 (0.0005) \\
 medium & lognormal & 0.025 & 0.0277 (0.0005) * & 0.025 & 0.0251 (0.0005)
 & 0.025 & 0.0257 (0.0005) \\
-medium & loglogistic & 0.026 & Pending & 0.025 & Pending & 0.025 &
-Pending \\
+medium & loglogistic & 0.026 & 0.0275 (0.0005) & 0.025 & Pending & 0.025
+& Pending \\
 high & exponential & 0.026 & Pending & 0.026 & Pending & 0.025 & 0.0249
 (0.0005) \\
 high & weibull & 0.025 & 0.0282 (0.0005) * & 0.025 & 0.0256 (0.0005) &
 0.024 & 0.0251 (0.0005) \\
 high & lognormal & 0.026 & 0.0277 (0.0005) & 0.026 & 0.0248 (0.0005) &
 0.025 & 0.0253 (0.0005) \\
-high & loglogistic & 0.025 & Pending & 0.025 & Pending & 0.024 &
-Pending \\
+high & loglogistic & 0.025 & Pending & 0.025 & Pending & 0.024 & 0.0250
+(0.0005) \\
 
 \end{longtable}
 
@@ -1020,7 +1075,8 @@ Pending \\
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{knitr}\SpecialCharTok{::}\FunctionTok{kable}\NormalTok{(}\FunctionTok{manuscript\_zhao\_table}\NormalTok{(zhao, }\StringTok{"table3"}\NormalTok{))}
+\NormalTok{knitr}\SpecialCharTok{::}\FunctionTok{kable}\NormalTok{(}\FunctionTok{manuscript\_zhao\_table}\NormalTok{(zhao, }\StringTok{"table3"}\NormalTok{), }\AttributeTok{booktabs =} \ConstantTok{TRUE}\NormalTok{,}
+             \AttributeTok{align =} \FunctionTok{c}\NormalTok{(}\StringTok{"l"}\NormalTok{, }\StringTok{"l"}\NormalTok{, }\StringTok{"r"}\NormalTok{, }\FunctionTok{rep}\NormalTok{(}\StringTok{"r"}\NormalTok{, }\DecValTok{6}\NormalTok{)))}
 \end{Highlighting}
 \end{Shaded}
 
@@ -1030,15 +1086,16 @@ Pending \\
   >{\raggedright\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.1167}}
   >{\raggedright\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.1083}}
   >{\raggedleft\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.1250}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.0667}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.1500}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.0667}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.1500}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.0667}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.1500}}@{}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.0667}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.1500}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.0667}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.1500}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.0667}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 16\tabcolsep) * \real{0.1500}}@{}}
 
 \caption{\label{tbl-zhao-power}Comparison with Zhao Table 3: one-sided
-power probabilities. Parentheses contain local Monte Carlo SEs; an
+power probabilities. LR = log-rank, PP = Peto-Prentice, and GB =
+Gehan-Breslow. Parentheses contain simulation Monte Carlo SEs; an
 asterisk marks a discrepancy. The log-time shift is 0.25 or 0.5 for all
 four distributions.}
 
@@ -1051,17 +1108,17 @@ Heterogeneity
 Distribution
 \end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
 Log-time shift
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
 LR Zhao
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
 LR local (MCSE)
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
 PP Zhao
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
 PP local (MCSE)
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
 GB Zhao
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
 GB local (MCSE)
 \end{minipage} \\
 \midrule\noalign{}
@@ -1080,10 +1137,10 @@ low & lognormal & 0.25 & 0.620 & 0.7083 (0.0045) * & 0.645 & 0.7904
 (0.0041) * & 0.664 & 0.7836 (0.0041) * \\
 low & lognormal & 0.50 & 0.989 & 0.9982 (0.0004) * & 0.992 & 0.9996
 (0.0002) * & 0.995 & 0.9996 (0.0002) * \\
-low & loglogistic & 0.25 & 0.325 & Pending & 0.334 & Pending & 0.334 &
-Pending \\
-low & loglogistic & 0.50 & 0.828 & Pending & 0.846 & Pending & 0.852 &
-Pending \\
+low & loglogistic & 0.25 & 0.325 & 0.3898 (0.0049) * & 0.334 & 0.4375
+(0.0050) * & 0.334 & 0.4448 (0.0050) * \\
+low & loglogistic & 0.50 & 0.828 & 0.9003 (0.0030) * & 0.846 & 0.9396
+(0.0024) * & 0.852 & 0.9430 (0.0023) * \\
 medium & exponential & 0.25 & 0.180 & 0.2384 (0.0043) * & 0.180 & 0.2462
 (0.0043) * & 0.164 & 0.2438 (0.0043) * \\
 medium & exponential & 0.50 & 0.519 & 0.6914 (0.0046) * & 0.521 & 0.6996
@@ -1096,26 +1153,26 @@ medium & lognormal & 0.25 & 0.361 & 0.4834 (0.0050) * & 0.360 & 0.4557
 (0.0050) * & 0.330 & 0.4405 (0.0050) * \\
 medium & lognormal & 0.50 & 0.869 & 0.9573 (0.0020) * & 0.872 & 0.9537
 (0.0021) * & 0.834 & 0.9335 (0.0025) * \\
-medium & loglogistic & 0.25 & 0.242 & Pending & 0.247 & Pending & 0.230
-& Pending \\
-medium & loglogistic & 0.50 & 0.695 & Pending & 0.711 & Pending & 0.688
-& Pending \\
+medium & loglogistic & 0.25 & 0.242 & 0.2954 (0.0046) * & 0.247 & 0.3174
+(0.0047) * & 0.230 & 0.3086 (0.0046) * \\
+medium & loglogistic & 0.50 & 0.695 & 0.7856 (0.0041) * & 0.711 & 0.8162
+(0.0039) * & 0.688 & 0.7989 (0.0040) * \\
 high & exponential & 0.25 & 0.169 & 0.2347 (0.0042) * & 0.165 & 0.2114
 (0.0041) * & 0.149 & 0.2096 (0.0041) * \\
 high & exponential & 0.50 & 0.478 & 0.6408 (0.0048) * & 0.471 & 0.6316
 (0.0048) * & 0.422 & 0.5967 (0.0049) * \\
 high & weibull & 0.25 & 0.255 & 0.4456 (0.0050) * & 0.242 & 0.3630
 (0.0048) * & 0.193 & 0.3300 (0.0047) * \\
-high & weibull & 0.50 & 0.710 & 0.9273 (0.0026) * & 0.683 & Pending &
-0.574 & 0.8399 (0.0037) * \\
+high & weibull & 0.50 & 0.710 & 0.9273 (0.0026) * & 0.683 & 0.8763
+(0.0033) * & 0.574 & 0.8399 (0.0037) * \\
 high & lognormal & 0.25 & 0.310 & 0.4345 (0.0050) * & 0.293 & 0.3825
 (0.0049) * & 0.251 & 0.3481 (0.0048) * \\
 high & lognormal & 0.50 & 0.800 & 0.9223 (0.0027) * & 0.781 & 0.8880
 (0.0032) * & 0.703 & 0.8541 (0.0035) * \\
-high & loglogistic & 0.25 & 0.210 & Pending & 0.212 & Pending & 0.191 &
-Pending \\
-high & loglogistic & 0.50 & 0.614 & Pending & 0.617 & Pending & 0.569 &
-Pending \\
+high & loglogistic & 0.25 & 0.210 & 0.2705 (0.0044) * & 0.212 & 0.2647
+(0.0044) * & 0.191 & 0.2533 (0.0043) * \\
+high & loglogistic & 0.50 & 0.614 & 0.7315 (0.0044) * & 0.617 & 0.7378
+(0.0044) * & 0.569 & 0.7057 (0.0046) * \\
 
 \end{longtable}
 
@@ -1129,18 +1186,26 @@ different variance convention rather than pooling results across
 methods. The completed-cell findings above remain provisional until the
 design differences and observed discrepancies are resolved.
 
-\subsubsection{PSG-shaped simulation
-study}\label{psg-shaped-simulation-study}
+\subsubsection{Polysomnography-bout simulation
+study}\label{polysomnography-bout-simulation-study}
 
-The PSG supplement script simulates recurrent bouts with: (i) subject
-frailty, (ii) visit effects, (iii) persistent burst/recovery states,
-(iv) 360--480 minute recordings with terminal censoring, (v) unequal
-independent-arm sizes (30 control, 45 treatment), and (vi) paired visits
-with shared participant frailty. Under the null, treatment and control
-gaps have the same distribution. Power alternatives multiply treatment
-gaps by 1.25 (longer bouts) or 0.80 (shorter bouts). The script
-evaluates \(G_0^*\), \(G_1^*\), Zhao pooled-risk sensitivity analyses,
-and paired label permutations where appropriate.
+Polysomnography (PSG) records sleep in scored 30-second epochs. For a
+selected sleep stage, consecutive epochs assigned that stage can be
+run-length encoded into bouts, and the gaps between bouts form recurrent
+gap times. The supplement simulation is designed to resemble that
+structure, with: (i) subject frailty, (ii) visit effects, (iii)
+persistent burst/recovery states, (iv) 360--480 minute recordings with
+terminal censoring, (v) unequal independent-arm sizes (30 control, 45
+treatment), and (vi) paired visits with shared participant frailty.
+Under the null, treatment and control gaps have the same distribution.
+The corresponding PSG-bout data should not be assumed to satisfy the IID
+gap assumption required for a renewal interpretation of PSH; stage
+dependence, subject frailty, and bout-state persistence are precisely
+reasons to prefer the Wang-Chang estimand and clustered inference there.
+Power alternatives multiply treatment gaps by 1.25 (longer bouts) or
+0.80 (shorter bouts). The script evaluates \(G_0^*\), \(G_1^*\), Zhao
+pooled-risk sensitivity analyses, and paired label permutations where
+appropriate.
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -1169,7 +1234,7 @@ pilot}\label{k-group-application-specific-pilot}
 The following table imports the existing K-group output, if available.
 Its replicate count is displayed explicitly. It assesses the package's
 extension of the weighted-risk-set score to three unequal arms under the
-PSG-shaped design in
+PSG-bout design in
 \texttt{data-raw/wc-logrank-k-validation-simulation.R}. It is not a
 published numerical benchmark from \citet{luo2011}, and a small pilot
 does not establish type-I-error control.
@@ -1210,18 +1275,14 @@ cases. AI output was not treated as statistical validation. Candidate
 implementations were reviewed against the cited formulas. The executable
 checks below assess WC and PSH against independent R packages; these
 checks do not validate every rank test or competing-risk procedure.
-Package unit tests, vignette rendering, \texttt{roxygen2::roxygenise()},
-and \texttt{devtools::check()} provide additional software validation.
-Completed simulation cells are distinguished from pending cells and from
-runs with incompatible generator metadata.
 
 \subsection{Discussion}\label{discussion}
 
 The main contribution of \texttt{recurSurvTests} is not a claim that one
 estimator or test fits every recurrent-event question. Rather, it makes
 the choice visible: PSH/pooled KM for a renewal/IID gap interpretation,
-Wang--Chang for marginal gap-time survival with event-count weighting,
-Luo--Huang for the corresponding weighted-risk-set rank comparison,
+Wang-Chang for marginal gap-time survival with event-count weighting,
+Luo-Huang for the corresponding weighted-risk-set rank comparison,
 Zhao-style sensitivity analyses, and RCIF methods for recurrent
 competing risks. The reference checks connect the new implementations to
 legacy software, while the simulation infrastructure makes remaining
@@ -1233,70 +1294,71 @@ the implemented K-group rank-test extension, and comparing nonparametric
 tests with marginal and frailty regression models on planned sleep-bout
 applications.
 
-\subsection{Computational reproducibility}\label{sec-reproduce}
+\subsubsection{What must be run before a complete manuscript
+render}\label{what-must-be-run-before-a-complete-manuscript-render}
 
-From the repository root, render with:
+The ordinary examples, estimator/reference checks, table formatting, and
+manuscript rendering are local and do not launch simulations. The
+remaining optional outputs have different costs:
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\ExtensionTok{quarto}\NormalTok{ render vignettes/jss{-}manuscript.qmd}
-\end{Highlighting}
-\end{Shaded}
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2500}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2500}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2500}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2500}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Output
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Driver
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Recommended execution
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Input needed by render
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Zhao Tables 1--3 & \texttt{data-raw/zhao-2020-table-simulations.R} via
+\texttt{zhao-2020-table-simulations.sbatch} & HPC. Each of 120 tasks
+contains 100,000 null or 10,000 power replicates; use the corrected
+log-logistic tasks plus any other missing task IDs. & One task-specific
+RDS per task in \texttt{data-raw/zhao-2020-table-simulations/}; then
+render locally. \\
+PSG-bout study & \texttt{data-raw/psg-validation-simulations.R} via its
+Slurm array & HPC for the planned 10,000 replicates and 999 paired
+permutations. Combine task RDS/CSV files into
+\texttt{data-raw/psg-validation-results.rds}. & The combined RDS named
+above. \\
+K-group pilot/validation &
+\texttt{data-raw/wc-logrank-k-validation-simulation.R} via its Slurm
+array & Local for a small pilot; HPC for 20,000 replicates. Combine task
+outputs before treating it as a full validation. &
+\texttt{data-raw/wc-logrank-k-validation-results.csv} (the current file
+is a pilot). \\
+Curve-interval coverage &
+\texttt{data-raw/curve-ci-coverage-simulation.R} & HPC recommended:
+25,000-subject truth plus 1,000 data sets and 999 bootstraps. Verify
+task partitioning/aggregation before submitting the current array
+wrapper. & \texttt{data-raw/curve-ci-coverage-results.rds} (not
+currently available). \\
+Zhao report aggregation &
+\texttt{data-raw/zhao-2020-validation-report.R} & Local after Zhao RDS
+files arrive; it does not simulate. & Existing task RDS files. \\
+Final manuscript artifacts & \texttt{data-raw/reproduce-manuscript.R} &
+Local; runs Quarto and writes public tables plus internal metadata. &
+Any optional combined outputs supplied above. \\
+\end{longtable}
+}
 
-This requires Quarto and R packages \texttt{here}, \texttt{knitr},
-\texttt{rmarkdown}, \texttt{pkgload}, and \texttt{survival}. The
-manuscript loads the package source from this checkout with
-\texttt{here::i\_am("vignettes/jss-manuscript.qmd")} anchoring the
-repository root and \texttt{pkgload::load\_all()}, so a stale installed
-\texttt{recurSurvTests} is not used. \texttt{survrec} and
-\texttt{newTestSurvRec} are optional for their respective comparison
-rows. Rendering installs nothing, launches no simulation arrays, and
-disables chunk caching so newly copied result files are incorporated
-immediately. Seeds are specified in the executable examples and
-simulation drivers.
-
-By default, Zhao input files are read from
-\texttt{data-raw/zhao-2020-table-simulations/}. To use another
-directory:
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\VariableTok{ZHAO\_RESULTS\_DIR}\OperatorTok{=}\NormalTok{/path/to/completed/rds/files }\ExtensionTok{quarto}\NormalTok{ render vignettes/jss{-}manuscript.qmd}
-\end{Highlighting}
-\end{Shaded}
-
-The input must contain one RDS per task using the original 120-task
-partition. Missing files yield pending cells; duplicate tasks,
-incompatible settings, invalid summaries, or mixed variance conventions
-stop rendering with an error. An empty input directory renders the
-published benchmarks and placeholders. Long-running jobs must be
-submitted separately, using the documented shell scripts. For corrected
-log-logistic tasks only:
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\ExtensionTok{sbatch} \AttributeTok{{-}{-}array}\OperatorTok{=}\NormalTok{4{-}120:4\%20 data{-}raw/zhao{-}2020{-}table{-}simulations.sbatch}
-\end{Highlighting}
-\end{Shaded}
-
-Archive any existing legacy log-logistic files outside the input
-directory before rerunning. The other distributions do not require
-regeneration for the log-logistic correction. Corrected generator
-metadata is checked per file; old outputs are never relabeled by the
-manuscript.
-
-Each render exports the full Zhao comparison, the three
-publication-shaped tables, the reference-package checks, a standalone
-PNG and PDF comparison figure, input-file checksums, current source
-checksums, and R session information to \texttt{docs/jss-manuscript/}
-(override with \texttt{MANUSCRIPT\_OUTPUT\_DIR}). Input checksums
-identify the exact files used. Current source checksums document the
-rendering environment; they cannot recover the execution commit of
-legacy simulation files that did not record it. The benchmark
-transcription and its provenance note are included in the source
-manifest. The bibliography is maintained in
-\texttt{vignettes/references.bib} and rendered through standard Pandoc
-citations.
+At present, the Zhao directory is incomplete. The missing task IDs are
+\texttt{4,\ 8,\ 12,\ 16,\ 20,\ 21,\ 24,\ 28,\ 32,\ 33,\ 36,\ 37,\ 40,\ 44,\ 48,\ 52,\ 56,\ 60,\ 64,\ 68,\ 72,\ 76,\ 80,\ 84,\ 88,\ 92,\ 94,\ 96,\ 100,\ 104,\ 108,\ 112,\ 116,\ 120}.
+IDs divisible by four are the corrected log-logistic cells; the other
+missing IDs should be rerun with the same driver as their original cell.
+The validation report and manuscript intentionally show these as pending
+rather than treating them as zero results.
 
 \begin{verbatim}
 R version 4.4.0 (2024-04-24)

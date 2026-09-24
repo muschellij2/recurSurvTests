@@ -1,0 +1,13 @@
+"estimator","interval","time","coverage","mc_se"
+"psh","pointwise",0.5,1,0
+"wc","pointwise",0.5,1,0
+"psh","simultaneous",0.5,1,0
+"wc","simultaneous",0.5,1,0
+"psh","pointwise",1,1,0
+"wc","pointwise",1,1,0
+"psh","simultaneous",1,1,0
+"wc","simultaneous",1,1,0
+"psh","pointwise",2,1,0
+"wc","pointwise",2,1,0
+"psh","simultaneous",2,1,0
+"wc","simultaneous",2,1,0

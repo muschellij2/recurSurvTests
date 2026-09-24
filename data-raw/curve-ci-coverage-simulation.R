@@ -60,7 +60,10 @@ if (!identical(tolower(Sys.getenv("RUN_CURVE_CI_COVERAGE")), "true")) {
   }
 
   truth_n <- as.integer(Sys.getenv("CURVE_CI_TRUTH_N", "25000"))
+  task_id <- as.integer(Sys.getenv("CURVE_CI_TASK_ID", "1"))
+  n_tasks <- as.integer(Sys.getenv("CURVE_CI_N_TASKS", "1"))
   set.seed(20260918)
+  started_at <- proc.time()[["elapsed"]]
   times <- c(0.5, 1, 2)
   truth_data <- simulate_histories(truth_n)
   truth <- lapply(c("wc", "psh"), function(estimator) {
@@ -72,6 +75,13 @@ if (!identical(tolower(Sys.getenv("RUN_CURVE_CI_COVERAGE")), "true")) {
     recurSurvTests:::.recurrent_surv_step(fit, times)
   })
   names(truth) <- c("wc", "psh")
+  truth_elapsed <- proc.time()[["elapsed"]] - started_at
+  format_duration <- function(seconds) {
+    seconds <- max(0, round(seconds))
+    sprintf("%02d:%02d:%02d", seconds %/% 3600L,
+            (seconds %% 3600L) %/% 60L, seconds %% 60L)
+  }
+  message(sprintf("Reference curves complete in %s.", format_duration(truth_elapsed)))
 
   one_replicate <- function(rep_id, n_subjects = 100L, B = 999L) {
     d <- simulate_histories(n_subjects)
@@ -91,9 +101,28 @@ if (!identical(tolower(Sys.getenv("RUN_CURVE_CI_COVERAGE")), "true")) {
     }))
   }
 
-  n_sim <- as.integer(Sys.getenv("CURVE_CI_N_SIM", "1000"))
+  n_total <- as.integer(Sys.getenv("CURVE_CI_N_SIM", "1000"))
+  n_per_task <- ceiling(n_total / n_tasks)
+  n_sim <- max(0L, min(n_per_task, n_total - (task_id - 1L) * n_per_task))
   B <- as.integer(Sys.getenv("CURVE_CI_B", "999"))
-  results <- do.call(rbind, lapply(seq_len(n_sim), one_replicate, B = B))
+  first_replicate <- (task_id - 1L) * n_per_task + 1L
+  progress_bar <- utils::txtProgressBar(min = 0, max = n_sim, style = 3)
+  completed <- 0L
+  results <- do.call(rbind, lapply(seq_len(n_sim), function(i) {
+    value <- one_replicate(first_replicate + i - 1L, B = B)
+    completed <<- completed + 1L
+    utils::setTxtProgressBar(progress_bar, completed)
+    report_every <- max(1L, ceiling(n_sim / 20L))
+    if (completed == 1L || completed %% report_every == 0L || completed == n_sim) {
+      simulation_elapsed <- proc.time()[["elapsed"]] - started_at - truth_elapsed
+      remaining <- simulation_elapsed / completed * (n_sim - completed)
+      message(sprintf("\nCurve-CI simulations: %d/%d; elapsed %s; ETA %s; projected task total %s",
+        completed, n_sim, format_duration(simulation_elapsed), format_duration(remaining),
+        format_duration(truth_elapsed + simulation_elapsed + remaining)))
+    }
+    value
+  }))
+  close(progress_bar)
   pointwise <- aggregate(covered ~ estimator + interval + time, results, mean)
   split_key <- interaction(results$replicate, results$estimator,
                            results$interval, drop = TRUE)
@@ -109,11 +138,12 @@ if (!identical(tolower(Sys.getenv("RUN_CURVE_CI_COVERAGE")), "true")) {
     simultaneous$joint_coverage * (1 - simultaneous$joint_coverage) / n_sim
   )
 
+  suffix <- if (n_tasks > 1L) paste0("-task", task_id) else ""
   saveRDS(list(truth = truth, results = results, pointwise = pointwise,
                simultaneous = simultaneous),
-          "data-raw/curve-ci-coverage-results.rds")
-  utils::write.csv(pointwise, "data-raw/curve-ci-pointwise-coverage.csv",
+          paste0("data-raw/curve-ci-coverage-results", suffix, ".rds"))
+  utils::write.csv(pointwise, paste0("data-raw/curve-ci-pointwise-coverage", suffix, ".csv"),
                    row.names = FALSE)
-  utils::write.csv(simultaneous, "data-raw/curve-ci-simultaneous-coverage.csv",
+  utils::write.csv(simultaneous, paste0("data-raw/curve-ci-simultaneous-coverage", suffix, ".csv"),
                    row.names = FALSE)
 }
