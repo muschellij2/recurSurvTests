@@ -1,12 +1,22 @@
 # PSG-shaped validation simulations. Run explicitly from the package root:
 # RUN_PSG_VALIDATION=true Rscript data-raw/psg-validation-simulations.R
 if (Sys.getenv("RUN_PSG_VALIDATION") != "true") stop("Set RUN_PSG_VALIDATION=true to run.")
-if (!requireNamespace("devtools", quietly = TRUE)) stop("Install devtools first.")
-devtools::load_all(".", quiet = TRUE)
 n_total <- as.integer(Sys.getenv("PSG_N_SIM", "1000"))
 task_id <- as.integer(Sys.getenv("PSG_TASK_ID", "1")); n_tasks <- as.integer(Sys.getenv("PSG_N_TASKS", "1"))
 B <- as.integer(Sys.getenv("PSG_B", "999"))
 seed <- as.integer(Sys.getenv("PSG_SEED", "20260922"))
+suffix <- if (n_tasks > 1L) paste0("-task", task_id) else ""
+output_file <- paste0("data-raw/psg-validation-results", suffix, ".rds")
+
+# Task-level RDS files are the canonical outputs.  This makes interrupted
+# arrays safely resumable: a scheduler retry does not replace completed work.
+if (file.exists(output_file)) {
+  message("PSG validation output already exists: ", output_file, "; skipping.")
+  quit(status = 0L)
+}
+
+if (!requireNamespace("devtools", quietly = TRUE)) stop("Install devtools first.")
+devtools::load_all(".", quiet = TRUE)
 
 format_duration <- function(seconds) {
   seconds <- max(0, round(seconds))
@@ -110,8 +120,7 @@ result$n_sim <- as.integer(stats::aggregate(p.value ~ design + alternative + met
   raw_result, length)$p.value)
 result$monte_carlo_se <- sqrt(result$rejection_rate * (1 - result$rejection_rate) / result$n_sim)
 result$B <- B
-suffix <- if (n_tasks > 1L) paste0("-task", task_id) else ""
-saveRDS(list(summary = result, raw = raw_result), paste0("data-raw/psg-validation-results", suffix, ".rds"))
+saveRDS(list(summary = result, raw = raw_result), output_file)
 if (n_tasks == 1L) {
   utils::write.csv(result, "data-raw/psg-validation-results.csv", row.names = FALSE)
   grDevices::png("data-raw/psg-validation-rejection-rates.png", 1400, 800)
