@@ -28,6 +28,7 @@ jobs:
         with:
           extra-packages: any::pkgdown, any::quarto, local::.
           needs: website
+          quarto-version: 1.9.36
       - name: Build site
         run: pkgdown::build_site_github_pages(dest_dir = "pkgdown", new_process = FALSE, install = FALSE)
         shell: Rscript {0}
