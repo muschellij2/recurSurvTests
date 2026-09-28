@@ -42,10 +42,7 @@ task_id <- as.integer(Sys.getenv("ZHAO_TASK_ID", "1"))
 n_tasks <- as.integer(Sys.getenv("ZHAO_N_TASKS", "1"))
 chunk_size <- as.integer(Sys.getenv("ZHAO_CHUNK_SIZE", "100"))
 
-suffix <- if (n_tasks == 1L)
-  ""
-else
-  sprintf("-task-%03d-of-%03d", task_id, n_tasks)
+suffix <- if (n_tasks == 1L) "" else sprintf("-task-%03d-of-%03d", task_id, n_tasks)
 dir.create(results_dir, recursive = TRUE, showWarnings = FALSE)
 outfile <- file.path(
   results_dir,
@@ -262,10 +259,7 @@ if (!file.exists(outfile)) {
     table3 = all_results[all_results$table == "table3", , drop = FALSE]
   )
 
-  suffix <- if (n_tasks == 1L)
-    ""
-  else
-    sprintf("-task-%03d-of-%03d", task_id, n_tasks)
+  suffix <- if (n_tasks == 1L) "" else sprintf("-task-%03d-of-%03d", task_id, n_tasks)
   saveRDS(result, outfile)
   print(result$table1)
   print(result$table2)
