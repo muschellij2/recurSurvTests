@@ -4,8 +4,8 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=4G
 #SBATCH --time=12:00:00
-#SBATCH --output=data-raw/wc-logrank-k-diagnostics/slurm-logs/k-null-%A_%a.out
-#SBATCH --error=data-raw/wc-logrank-k-diagnostics/slurm-logs/k-null-%A_%a.err
+#SBATCH --output=data-raw/slurm-logs/k-null-%A_%a.out
+#SBATCH --error=data-raw/slurm-logs/k-null-%A_%a.err
 
 set +u
 source ~/.bash_profile
