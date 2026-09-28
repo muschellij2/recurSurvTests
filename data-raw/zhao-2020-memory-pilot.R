@@ -12,7 +12,8 @@ for (h in list(low=c(.5,1.5),medium=c(.1,1.9),high=c(.01,1.99))) {
  for (i in 1:5) {
   d <- e$.zhao_simulated_gap_data(100,'loglogistic',h,180)
   events[i] <- sum(d$status)
-  fit <- e$zhao_rank_test(d,group='group',episode='episode')
+  fit <- e$zhao_rank_test(d, group = 'group', episode = 'episode',
+                          variance_method = 'pooled_risk')
  }
  cat('Z range',h,'events range',range(events),'\n')
 }

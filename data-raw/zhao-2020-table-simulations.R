@@ -8,7 +8,8 @@
 #
 # Runtime controls:
 #
-# * ZHAO_VARIANCE_METHOD: pooled_risk (default) or zhao_eq6.
+# * ZHAO_VARIANCE_METHOD: pooled_risk (default, matching saved validation
+#   outputs) or zhao_eq6.
 # * ZHAO_PARALLEL: serial (default) or multicore.
 # * ZHAO_N_CORES: local workers for multicore mode (default: 1).
 # * ZHAO_TASK_ID and ZHAO_N_TASKS: one-based external array-task partition.

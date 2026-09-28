@@ -1,13 +1,26 @@
 # PSG-shaped validation simulations. Run explicitly from the package root:
 # RUN_PSG_VALIDATION=true Rscript data-raw/psg-validation-simulations.R
+# Set PSG_ZHAO_VARIANCE_METHOD=zhao_eq6 to run the Equation 6 sensitivity in
+# its own output folder. The default pooled_risk setting preserves old outputs.
 if (Sys.getenv("RUN_PSG_VALIDATION") != "true") stop("Set RUN_PSG_VALIDATION=true to run.")
+variance_method <- match.arg(
+  Sys.getenv("PSG_ZHAO_VARIANCE_METHOD", "pooled_risk"),
+  c("pooled_risk", "zhao_eq6")
+)
+results_dir <- if (variance_method == "pooled_risk") {
+  file.path("data-raw", "psg-validation-results")
+} else {
+  file.path("data-raw", "psg-validation-results-zhao_eq6")
+}
+summary_dir <- if (variance_method == "pooled_risk") "data-raw" else results_dir
 n_total <- as.integer(Sys.getenv("PSG_N_SIM", "1000"))
 task_id <- as.integer(Sys.getenv("PSG_TASK_ID", "1"));
 n_tasks <- as.integer(Sys.getenv("PSG_N_TASKS", "1"))
 B <- as.integer(Sys.getenv("PSG_B", "999"))
 seed <- as.integer(Sys.getenv("PSG_SEED", "20260922"))
 suffix <- if (n_tasks > 1L) paste0("-task", task_id) else ""
-output_file <- paste0("data-raw/psg-validation-results/psg-validation-results", suffix, ".rds")
+dir.create(results_dir, recursive = TRUE, showWarnings = FALSE)
+output_file <- file.path(results_dir, paste0("psg-validation-results", suffix, ".rds"))
 
 # Task-level RDS files are the canonical outputs.  This makes interrupted
 # arrays safely resumable: a scheduler retry does not replace completed work.
@@ -68,12 +81,15 @@ one_run <- function(paired, multiplier) {
   if (!paired) return(c(
     wc_rho0 = wc_logrank(d, group = "arm", episode = "episode", rho = 0)$p.value,
     wc_rho1 = wc_logrank(d, group = "arm", episode = "episode", rho = 1)$p.value,
-    zhao = zhao_rank_test(d, group = "arm", episode = "episode")$p.value
+    zhao = zhao_rank_test(d, group = "arm", episode = "episode",
+                          variance_method = variance_method)$p.value
   ))
   c(
     paired_perm_rho0 = wc_paired_permutation(d, "pair", "arm", episode = "episode", rho = 0, B = B)$p.value,
     paired_perm_rho1 = wc_paired_permutation(d, "pair", "arm", episode = "episode", rho = 1, B = B)$p.value,
-    zhao_unpaired_sensitivity = zhao_rank_test(d, group = "arm", episode = "episode")$p.value
+    zhao_unpaired_sensitivity = zhao_rank_test(
+      d, group = "arm", episode = "episode", variance_method = variance_method
+    )$p.value
   )
 }
 
@@ -121,10 +137,11 @@ result$n_sim <- as.integer(stats::aggregate(p.value ~ design + alternative + met
   raw_result, length)$p.value)
 result$monte_carlo_se <- sqrt(result$rejection_rate * (1 - result$rejection_rate) / result$n_sim)
 result$B <- B
-saveRDS(list(summary = result, raw = raw_result), output_file)
+saveRDS(list(summary = result, raw = raw_result,
+             variance_method = variance_method), output_file)
 if (n_tasks == 1L) {
-  utils::write.csv(result, "data-raw/psg-validation-results.csv", row.names = FALSE)
-  grDevices::png("data-raw/psg-validation-rejection-rates.png", 1400, 800)
+  utils::write.csv(result, file.path(summary_dir, "psg-validation-results.csv"), row.names = FALSE)
+  grDevices::png(file.path(summary_dir, "psg-validation-rejection-rates.png"), 1400, 800)
   graphics::barplot(result$rejection_rate, names.arg = paste(result$design, result$alternative, result$method, sep = "\n"),
     las = 2, ylim = c(0, 1), ylab = "Rejection rate", main = "PSG-shaped recurrent gap-time simulation")
   graphics::abline(h = .05, lty = 2, col = "firebrick")
