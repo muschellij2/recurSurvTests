@@ -529,8 +529,8 @@ shown as *Pending*; they do not contribute zero rejection rates or enter
 comparison summaries. `pooled_risk` and the printed Equation 6 group-risk
 convention (`zhao_eq6`) remain distinct; the importer rejects mixtures of
 variance conventions and inconsistent settings. The `zhao_eq6` comparison
-remains pending unless a separate, consistently configured result directory
-is supplied.
+remains pending unless the separate variance-method array is run and imported
+from its isolated result directory.
 
 The cell-availability and design-eligibility counts are retained in the
 reproducibility artifacts, but are not presented as a scientific table in the
@@ -578,6 +578,15 @@ if (!zhao_comparable) {
                 nrow(power), 100 * min(power$difference), 100 * max(power$difference)))
     cat("These results require investigation of the generator/censoring design and variance convention before claiming published-table reproduction.\n\n")
   }
+  type1 <- subset(zhao, table == "table2" & available & design_eligible)
+  if (nrow(type1)) {
+    nominal_reject <- sum(type1$nominal_p_holm < 0.05, na.rm = TRUE)
+    published_compatible <- sum(type1$comparison == "compatible")
+    logrank <- subset(type1, test == "logrank")
+    cat(sprintf("Under the stated, unconfirmed Table 2 scale interpretation, **%d of %d** local rejection rates are compatible with Zhao's printed values, while **%d of %d** differ from nominal one-sided $\\alpha=0.025$ after Holm adjustment. All %d available LR cells reject more often than 2.5%%. Agreement with the published empirical rates and calibration to the nominal level are distinct checks.\n\n",
+                published_compatible, nrow(type1), nominal_reject, nrow(type1),
+                sum(logrank$empirical_rejection > 0.025)))
+  }
 }
 ```
 
@@ -617,13 +626,13 @@ knitr::kable(manuscript_zhao_table(zhao, "table3"), booktabs = TRUE,
              align = c("l", "l", "r", rep("r", 6)))
 ```
 
-**Full-run placeholder.** These same chunks will produce the full-data tables
-and plot after the remaining RDS files are copied into the input directory.
-Rendering never starts the 100,000-replicate jobs. Use a separate directory
-and `ZHAO_RESULTS_DIR` to render a different variance convention rather than
-pooling results across methods. The completed-cell findings above remain
-provisional until the design differences and observed discrepancies are
-resolved.
+The complete pooled-risk run supplies all 120 published-table cells. Rendering
+uses these stored summaries and does not start simulations. The separate
+`zhao_eq6` variance convention should be rendered from its own result directory
+so the two implementations are not pooled. Published-table reproduction
+remains unresolved because all Table 3 power cells differ from the reported
+values and the local recurrence/censoring generator is not identical to the
+paper's incompletely specified design.
 
 ### Polysomnography-bout simulation study
 
@@ -631,17 +640,67 @@ Polysomnography (PSG) records sleep in scored 30-second epochs. For a selected
 sleep stage, consecutive epochs assigned that stage can be run-length encoded
 into bouts, and the gaps between bouts form recurrent gap times. The supplement
 simulation is designed to resemble that structure, with: (i) subject frailty,
-(ii) visit effects, (iii) persistent burst/recovery states, (iv) 360--480
-minute recordings with terminal censoring, (v) unequal independent-arm sizes
-(30 control, 45 treatment), and (vi) paired visits with shared participant
+(ii) visit effects, (iii) persistent burst/recovery states, (iv) empirically
+calibrated 420--800 minute recordings (median 565 minutes) with terminal
+censoring, (v) unequal independent-arm sizes (7 control, 21 treatment), and
+(vi) paired visits with shared participant
 frailty. Under the null, treatment and control gaps have the same distribution.
 The corresponding PSG-bout data should not be assumed to satisfy the IID gap
 assumption required for a renewal interpretation of PSH; stage dependence,
 subject frailty, and bout-state persistence are precisely reasons to prefer the
 Wang-Chang estimand and clustered inference there.
 Power alternatives multiply treatment gaps by 1.25 (longer bouts) or 0.80
-(shorter bouts). The script evaluates $G_0^*$, $G_1^*$, Zhao pooled-risk
-sensitivity analyses, and paired label permutations where appropriate.
+(shorter bouts). The script evaluates $G_0^*$, $G_1^*$, the Zhao pooled-risk
+implementation, and paired label permutations where appropriate.
+
+The completed study used 10,000 simulated data sets per design--alternative
+cell and 999 random label swaps for each paired-visit analysis.  Thus, under
+an exactly calibrated 0.05 test, the Monte Carlo standard error of an observed
+null rejection proportion is about 0.0022; a difference of a few tenths of a
+percentage point from 0.05 is expected simulation variation, rather than
+evidence of size distortion.  This distinction is important here because the
+PSG-shaped generator deliberately includes both serial within-visit dependence
+and substantial subject heterogeneity.
+
+For the paired design, the observed null rejection rates were 0.0516 for the
+paired $G_0^*$ permutation test and 0.0503 for paired $G_1^*$.  Both are
+compatible with the nominal 0.05 level (respectively 0.7 and 0.1 Monte Carlo
+standard errors above the target).  In the independent, unequal-arm design,
+$G_1^*$ rejected in 0.0481 of null samples, also compatible with nominal size.
+The corresponding $G_0^*$ rate was 0.0577 (Monte Carlo SE 0.0023; 95% binomial
+interval 0.0532--0.0625), 3.3 Monte Carlo standard errors above 0.05.  This is
+evidence of modest anti-conservatism for the unweighted statistic in this
+particular small, 1:3 allocation scenario, not a general claim about its
+asymptotic size.  The default Zhao pooled-risk log-rank sensitivity produced
+the same rejection proportions as $G_0^*$ in all independent-arm cells, so it
+does not provide an independent confirmation of calibration in this design.
+This equality is algebraic, not a coincidental simulation result: at log-rank
+weight, the Zhao score is $W=\sum_i s_i$, whereas the Luo--Huang statistic is
+$G_0^*=W/n$.  With the pooled-risk denominator, their subject residual is the
+same $\psi_i=s_i-\sum_j R_{ij}dN_j(Z_i-\bar Z_j)/R_j$; consequently their
+standardized statistics, and hence two-sided p-values, are identical.  The
+`zhao` row is therefore a software cross-check, rather than a separate power
+comparison.  A genuinely distinct Zhao sensitivity analysis must use the
+printed group-risk (`zhao_eq6`) residual convention.
+
+The power results show useful, but moderate, sensitivity at the available
+28-visit scale.  For paired visits, rejection probabilities were 0.373 and
+0.415 for $G_0^*$ and 0.425 and 0.476 for $G_1^*$ under the 1.25 and 0.80 gap
+multipliers, respectively.  For independent unequal arms, they were 0.171 and
+0.093 for $G_0^*$, versus 0.122 and 0.110 for $G_1^*$.  These directional and
+weight-specific differences are expected in a non-renewal mixture of short
+bursts and longer recovery gaps; they should not be read as a universal ranking
+of the weights.  Finally, applying the unpaired Zhao test to paired data was
+extremely conservative under the null (0.0007) and had rejection rates only
+0.0465 and 0.0512 under the alternatives.  It is included solely as a warning
+about ignoring pairing, whereas the paired permutation analyses are the valid
+comparisons for that design.  It is not a permutation test: its visit-level
+sandwich variance omits the within-pair covariance.  Because the two visits
+share frailty, the relevant paired contrast has a negative covariance term,
+$-2\operatorname{Cov}(\psi_{i,\mathrm{control}},\psi_{i,\mathrm{treatment}})$,
+which reduces its variance when the residuals are positively correlated.
+Omitting that term overestimates the variance, shrinks the standardized score,
+and explains the extreme conservatism.
 
 ```{r}
 #| label: psg-results
@@ -649,29 +708,44 @@ sensitivity analyses, and paired label permutations where appropriate.
 psg_file <- Sys.getenv("PSG_RESULTS_FILE", file.path(repo_root, "data-raw/psg-validation-results.rds"))
 if (!grepl("^(/|[A-Za-z]:)", psg_file)) psg_file <- file.path(repo_root, psg_file)
 if (file.exists(psg_file)) {
-  psg_results <- readRDS(psg_file)
+  psg_object <- readRDS(psg_file)
+  # Aggregated files contain both the displayed summary and raw p-values.
+  # Accept a summary data frame too, for compatibility with early exports.
+  psg_results <- if (is.list(psg_object) && "summary" %in% names(psg_object)) {
+    psg_object$summary
+  } else {
+    psg_object
+  }
   stopifnot(is.data.frame(psg_results),
     all(c("design", "alternative", "method", "n_sim", "B", "rejection_rate", "monte_carlo_se") %in% names(psg_results)))
-  cat("Available PSG summaries are shown with their actual replicate and permutation counts; small runs are pilots, not full-study validation.\n\n")
+  cat("Completed PSG summaries are shown with their actual replicate and permutation counts.\n\n")
   print(knitr::kable(psg_results, digits = 4))
 } else {
-  cat("**Results placeholder.** No combined PSG result file is available. The planned 1,000-replicate/999-permutation results will be imported on rerender when `data-raw/psg-validation-results.rds` is supplied. Set `PSG_RESULTS_FILE` to select a different result file.\n\n")
+  cat("**Results placeholder.** No combined PSG result file is available. Set `PSG_RESULTS_FILE` to select a result file.\n\n")
 }
 ```
 
-### K-group application-specific pilot
+### K-group application-specific size and power
 
-The following table imports the existing K-group output, if available. Its
-replicate count is displayed explicitly. It assesses the package's extension
-of the weighted-risk-set score to three unequal arms under the PSG-bout
-design in `data-raw/wc-logrank-k-validation-simulation.R`. It is not a
-published numerical benchmark from @luo2011, and a small pilot does not
-establish type-I-error control.
+The K-group extension was evaluated in 20,000 independent null data sets with
+30, 45, and 60 subjects per group and in 20,000 data sets under an ordered
+alternative (gap multipliers 1.0, 1.2, and 0.8). Under the null,
+`wc_logrank_k()` rejected 6.775% of samples (exact 95% binomial interval,
+6.43%--7.13%), above the nominal 5% level. The interval is narrow enough to
+rule out Monte Carlo variation as the explanation. Under the ordered
+alternative, rejection was 88.2% (Monte Carlo SE 0.0023). The null result is a
+calibration concern for this three-group, unequal-allocation design. The
+statistic uses a subject-level sandwich covariance with an asymptotic
+chi-square reference; finite-sample Wald calibration is a plausible source,
+but the current run does not isolate it from the score/covariance construction
+or the serial burst/recovery data process. A follow-up varies total sample size
+and allocation to distinguish these explanations. This is an application-
+specific extension study, not a published numerical benchmark from @luo2011.
 
 ```{r}
 #| label: k-group-results
 #| results: asis
-k_file <- file.path(repo_root, "data-raw/wc-logrank-k-validation-results.csv")
+k_file <- file.path(repo_root, "data-raw/wc-logrank-k-validation-results/wc-logrank-k-validation-results.csv")
 if (file.exists(k_file)) {
   k_results <- read.csv(k_file)
   stopifnot(all(c("scenario", "rejection_rate", "mc_se", "n_sim") %in% names(k_results)))
@@ -701,10 +775,12 @@ methods for recurrent competing risks. The reference checks connect the new
 implementations to legacy software, while the simulation infrastructure makes
 remaining empirical questions reproducible rather than implicit.
 
-Future work includes completing the configured Zhao and PSG simulations,
-resolving the observed reproduction discrepancies, further validating the
-implemented K-group rank-test extension, and comparing nonparametric tests with marginal and frailty regression
-models on planned sleep-bout applications.
+Future work includes comparing the Zhao pooled-risk and printed Equation 6
+variance conventions,
+resolving the observed published-table power discrepancies, completing the
+two-group power grid, investigating finite-sample calibration of the K-group
+extension, and comparing nonparametric tests with marginal and frailty
+regression models on planned sleep-bout applications.
 
 ### What must be run before a complete manuscript render
 
@@ -714,20 +790,19 @@ optional outputs have different costs:
 
 | Output | Driver | Recommended execution | Input needed by render |
 |---|---|---|---|
-| Zhao Tables 1--3 | `data-raw/zhao-2020-table-simulations.R` via `zhao-2020-table-simulations.sbatch` | HPC. Each of 120 tasks contains 100,000 null or 10,000 power replicates; use the corrected log-logistic tasks plus any other missing task IDs. | One task-specific RDS per task in `data-raw/zhao-2020-table-simulations/`; then render locally. |
-| PSG-bout study | `data-raw/psg-validation-simulations.R` via its Slurm array | HPC for the planned 10,000 replicates and 999 paired permutations. Combine task RDS/CSV files into `data-raw/psg-validation-results.rds`. | The combined RDS named above. |
-| K-group pilot/validation | `data-raw/wc-logrank-k-validation-simulation.R` via its Slurm array | Local for a small pilot; HPC for 20,000 replicates. Combine task outputs before treating it as a full validation. | `data-raw/wc-logrank-k-validation-results.csv` (the current file is a pilot). |
+| Zhao Tables 1--3, pooled risk | `data-raw/zhao-2020-table-simulations.R` via `zhao-2020-table-simulations.sbatch` | Complete: 120 tasks; report aggregates locally. | `data-raw/zhao-2020-table-simulations/`; `docs/zhao-validation/report.md`. |
+| Zhao Tables 1--3, printed Equation 6 | Same driver with `ZHAO_VARIANCE_METHOD=zhao_eq6` | Pending: run the 120-task HPC array; keep outputs in its separate method directory, then generate the report and variance comparison. | `data-raw/zhao-2020-table-simulations-zhao_eq6/`. |
+| PSG-bout study | `data-raw/psg-validation-simulations.R` via its Slurm array | Complete: 10,000 replicates per cell and 999 paired permutations. | `data-raw/psg-validation-results.rds`. |
+| K-group size/power study | `data-raw/wc-logrank-k-validation-simulation.R` via its Slurm array | Complete: 20,000 replicates per scenario; null size was 6.775%, so calibration follow-up is required. | `data-raw/wc-logrank-k-validation-results/`. |
+| Two-group power grid | `data-raw/wc-logrank-power/simulate.R` via its Slurm array | Designed: 5,000 replicates per cell across N and effect size. | `data-raw/wc-logrank-power/`. |
 | Curve-interval coverage | `data-raw/curve-ci-coverage-simulation.R` | HPC recommended: 25,000-subject truth plus 1,000 data sets and 999 bootstraps. Verify task partitioning/aggregation before submitting the current array wrapper. | `data-raw/curve-ci-coverage-results.rds` (not currently available). |
-| Zhao report aggregation | `data-raw/zhao-2020-validation-report.R` | Local after Zhao RDS files arrive; it does not simulate. | Existing task RDS files. |
+| Zhao report aggregation | `data-raw/zhao-2020-validation-report.R` | Local; it reads completed task outputs and does not simulate. | Existing task RDS files. |
 | Final manuscript artifacts | `data-raw/reproduce-manuscript.R` | Local; runs Quarto and writes public tables plus internal metadata. | Any optional combined outputs supplied above. |
 
-At present, the Zhao directory is incomplete. The missing task IDs are
-`4, 8, 12, 16, 20, 21, 24, 28, 32, 33, 36, 37, 40, 44, 48, 52, 56, 60,
-64, 68, 72, 76, 80, 84, 88, 92, 94, 96, 100, 104, 108, 112, 116, 120`.
-IDs divisible by four are the corrected log-logistic cells; the other missing
-IDs should be rerun with the same driver as their original cell. The validation
-report and manuscript intentionally show these as pending rather than treating
-them as zero results.
+The pooled-risk Zhao task directory is complete. The report retains all 120
+cells and source checksums; the task RDS summaries do not retain individual
+simulated statistics. The Equation 6 array is a separate, uncompleted run and
+must not be mixed with the pooled-risk files.
 
 ```{r}
 #| label: export-reproducibility

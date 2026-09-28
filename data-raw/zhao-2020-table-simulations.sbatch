@@ -29,6 +29,7 @@ mkdir -p data-raw/slurm-logs
 mkdir -p data-raw/zhao-2020-table-simulations
 
 export RUN_ZHAO_100K=true
+export ZHAO_VARIANCE_METHOD="${ZHAO_VARIANCE_METHOD:-pooled_risk}"
 export ZHAO_PARALLEL=multicore
 export ZHAO_N_CORES="${SLURM_CPUS_PER_TASK}"
 export ZHAO_TASK_ID="${SLURM_ARRAY_TASK_ID}"

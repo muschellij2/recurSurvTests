@@ -2,11 +2,12 @@
 # RUN_PSG_VALIDATION=true Rscript data-raw/psg-validation-simulations.R
 if (Sys.getenv("RUN_PSG_VALIDATION") != "true") stop("Set RUN_PSG_VALIDATION=true to run.")
 n_total <- as.integer(Sys.getenv("PSG_N_SIM", "1000"))
-task_id <- as.integer(Sys.getenv("PSG_TASK_ID", "1")); n_tasks <- as.integer(Sys.getenv("PSG_N_TASKS", "1"))
+task_id <- as.integer(Sys.getenv("PSG_TASK_ID", "1"));
+n_tasks <- as.integer(Sys.getenv("PSG_N_TASKS", "1"))
 B <- as.integer(Sys.getenv("PSG_B", "999"))
 seed <- as.integer(Sys.getenv("PSG_SEED", "20260922"))
 suffix <- if (n_tasks > 1L) paste0("-task", task_id) else ""
-output_file <- paste0("data-raw/psg-validation-results", suffix, ".rds")
+output_file <- paste0("data-raw/psg-validation-results/psg-validation-results", suffix, ".rds")
 
 # Task-level RDS files are the canonical outputs.  This makes interrupted
 # arrays safely resumable: a scheduler retry does not replace completed work.

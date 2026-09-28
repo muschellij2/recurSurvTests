@@ -99,7 +99,8 @@ zhao_validation <- function(input = "data-raw/zhao-2020-table-simulations",
   manifest <- data.frame(task_id = ids, file = basename(files), md5 = unname(tools::md5sum(files)))
   write.csv(manifest, file.path(output, "input-manifest.csv"), row.names = FALSE)
   provenance <- c(reference, "data-raw/zhao-2020-published-tables.md", "data-raw/zhao-2020-validation-report.R",
-                  "data-raw/zhao-2020-table-simulations.R", "R/zhao_rank_tests.R")
+                  "data-raw/zhao-2020-table-simulations.R", "data-raw/zhao-variance-comparison.R",
+                  "R/zhao_rank_tests.R")
   write.csv(data.frame(file = provenance, md5 = unname(tools::md5sum(provenance))),
             file.path(output, "source-manifest.csv"), row.names = FALSE)
   capture.output(str(settings), sessionInfo(), file = file.path(output, "session-info.txt"))
@@ -188,10 +189,10 @@ zhao_validation <- function(input = "data-raw/zhao-2020-table-simulations",
     lines <- c(lines, "", paste0("### ", switch(t, table1="Table 1: null statistic SD", table2="Table 2: type I error", table3="Table 3: power")), "", md_table(tab))
   }
   lines <- c(lines, "## Next steps implied by this validation", "",
-    "1. Recover the remaining non-log-logistic task outputs and regenerate this report.",
-    "2. Rerun the corrected log-logistic cells with `sbatch --array=4-120:4%20 data-raw/zhao-2020-table-simulations.sbatch`. The script preserves the original 120-task partition and new outputs identify the corrected generator. Archive any legacy log-logistic outputs before replacement. Other distributions need not be rerun for this generator fix.",
-    "3. Investigate reproducible discrepancies in the comparable cells, checking the generator/censoring design and variance convention against the paper and, if obtainable, author code. Resolve the Table 2 scaling ambiguity with the authors.",
-    "4. Run targeted paired-seed comparisons of the pooled-risk and Equation 6 conventions before making an exact-reproduction claim. Matching nominal size alone does not validate the reported power results.", "",
+    "1. All 120 pooled-risk cells are now available. To assess the printed Equation 6 convention on the same deterministic simulation streams, rerun the full array with `sbatch --export=ALL,ZHAO_VARIANCE_METHOD=zhao_eq6 --array=1-120%20 data-raw/zhao-2020-table-simulations.sbatch`. These outputs go to `data-raw/zhao-2020-table-simulations-zhao_eq6/` and preserve the pooled-risk files.",
+    "2. Generate the Equation 6 report with `Rscript data-raw/zhao-2020-validation-report.R data-raw/zhao-2020-table-simulations-zhao_eq6 docs/zhao-validation-zhao-eq6`, then compare table-cell estimates with `Rscript data-raw/zhao-variance-comparison.R`.",
+    "3. The pooled-risk run does not reproduce Table 3: all 72 comparable power cells are discrepant, despite 30 of 36 Table 2 cells being compatible with the interpreted benchmarks. Assess whether Equation 6 improves the results, while treating the generator and censoring differences and the Table 2 scale interpretation as separate sources of uncertainty. Matching Table 2 alone is not evidence of power reproduction.",
+    "4. If neither variance convention matches, obtain author code or a numerical benchmark and reconcile the paper's recurrence generator and censoring details before revising the implementation.", "",
     "## Regenerate", "", "From the package root:", "", "```sh",
     "Rscript data-raw/zhao-2020-validation-report.R", "```", "",
     "Optional arguments select input and output directories. This command reads existing results and does not launch simulations. It writes Markdown, CSVs, a PNG figure, provenance files, and (when rmarkdown/Pandoc are available) a standalone HTML report.")
