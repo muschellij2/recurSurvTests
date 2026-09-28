@@ -15,7 +15,7 @@ zhao_rank_simulation(
   time_resolution = NULL,
   alpha = 0.05,
   test = c("logrank", "gehan_breslow", "peto_prentice"),
-  variance_method = c("pooled_risk", "zhao_eq6"),
+  variance_method = c("zhao_eq6", "pooled_risk"),
   alternative = c("two.sided", "greater", "less"),
   treatment_time_multiplier = 1,
   seed = NULL
@@ -76,7 +76,8 @@ routine package test.
 }
 \examples{
 \donttest{
-zhao_rank_simulation(n_sim = 100, n_per_group = 50, seed = 1)
+zhao_rank_simulation(n_sim = 100, n_per_group = 50,
+                     variance_method = "zhao_eq6", seed = 1)
 }
 
 }

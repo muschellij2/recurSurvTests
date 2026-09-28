@@ -376,15 +376,12 @@ treating the gap rows as independent.
 
 `zhao_rank_test()` is separate. It implements the extended LR, Gehan-Breslow,
 and Peto-Prentice score construction described by @zhao2020. Its default
-`pooled_risk` residual is assessed by the simulations below; current results
-are diagnostics of this implementation and do not establish byte-for-byte
-reproduction of the published tables. The
-group-risk denominator printed in Zhao et al.'s Equation 6 is retained as the
-explicit `zhao_eq6` sensitivity/reproduction path. Neither function should be
-described as an exact substitute for the other.
+`zhao_eq6` variance method follows the group-risk denominator printed in
+Equation 6. The package-added `pooled_risk` option is retained as a sensitivity
+path; the simulations below assess that option and do not establish exact
+reproduction of the published tables.
 
-There is an unresolved implementation ambiguity in the published description.
-Equation 6 appears to define the residual denominator using the risk set of
+The printed Equation 6 defines the residual denominator using the risk set of
 the subject's own group, whereas the pooled-risk construction uses the pooled
 weighted risk set. These choices produce different subject residuals and hence
 different robust variance estimates even when the score numerator is unchanged.

@@ -12,7 +12,7 @@ zhao_rank_test(
   status = "status",
   episode = NULL,
   test = c("logrank", "gehan_breslow", "peto_prentice"),
-  variance_method = c("pooled_risk", "zhao_eq6"),
+  variance_method = c("zhao_eq6", "pooled_risk"),
   alternative = c("two.sided", "greater", "less"),
   tau = Inf
 )
@@ -27,10 +27,11 @@ zhao_rank_test(
 \item{test}{Rank weight: \code{"logrank"} (LR), \code{"gehan_breslow"} (GB), or
 \code{"peto_prentice"} (PP).}
 
-\item{variance_method}{Robust variance residual. The default \code{"pooled_risk"}
-uses a pooled risk-set denominator and has residuals that sum exactly to
-the score. \code{"zhao_eq6"} follows the group-specific denominator printed in
-Zhao et al.'s Equation 6 as a sensitivity/reproduction implementation.}
+\item{variance_method}{Robust variance residual. The default \code{"zhao_eq6"}
+follows the group-specific denominator printed in Zhao et al.'s Equation
+6. \code{"pooled_risk"} is a package-added sensitivity option that uses the
+pooled risk-set denominator; its subject residuals sum exactly to the
+score.}
 
 \item{alternative}{Alternative for the normal-score p-value.}
 
@@ -49,6 +50,11 @@ distributions using the extended rank-test construction of Zhao et al.
 subject-level residuals (their Equation 6) to estimate the robust variance.
 }
 \details{
+The default variance implementation follows the printed group-specific
+denominator in Equation 6 of Zhao et al. (2020). The alternative
+\code{"pooled_risk"} denominator is package-added and is not specified by the
+paper. Neither option has been validated against author code.
+
 The implementation follows Equations 3, 6, and 7 of Zhao et al. (2020).
 The paper presents its calculation without tied observed times. Here, tied
 events are handled by aggregating their Wang--Chang weighted increments at a
@@ -63,7 +69,8 @@ dat <- data.frame(
   status = rep(c(1, 1, 0), 4),
   arm = rep(c("A", "A", "B", "B"), each = 3)
 )
-zhao_rank_test(dat, group = "arm", episode = "episode")
+zhao_rank_test(dat, group = "arm", episode = "episode",
+               variance_method = "zhao_eq6")
 
 }
 \references{

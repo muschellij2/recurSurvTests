@@ -10,10 +10,11 @@
 #' @param id,gap,status,episode See [wc_logrank()].
 #' @param test Rank weight: `"logrank"` (LR), `"gehan_breslow"` (GB), or
 #'   `"peto_prentice"` (PP).
-#' @param variance_method Robust variance residual. The default `"pooled_risk"`
-#'   uses a pooled risk-set denominator and has residuals that sum exactly to
-#'   the score. `"zhao_eq6"` follows the group-specific denominator printed in
-#'   Zhao et al.'s Equation 6 as a sensitivity/reproduction implementation.
+#' @param variance_method Robust variance residual. The default `"zhao_eq6"`
+#'   follows the group-specific denominator printed in Zhao et al.'s Equation
+#'   6. `"pooled_risk"` is a package-added sensitivity option that uses the
+#'   pooled risk-set denominator; its subject residuals sum exactly to the
+#'   score.
 #' @param alternative Alternative for the normal-score p-value.
 #' @param tau Optional upper truncation time.
 #'
@@ -23,6 +24,11 @@
 #' among subjects; a positive score corresponds to more events in `group1`.
 #'
 #' @details
+#' The default variance implementation follows the printed group-specific
+#' denominator in Equation 6 of Zhao et al. (2020). The alternative
+#' `"pooled_risk"` denominator is package-added and is not specified by the
+#' paper. Neither option has been validated against author code.
+#'
 #' The implementation follows Equations 3, 6, and 7 of Zhao et al. (2020).
 #' The paper presents its calculation without tied observed times. Here, tied
 #' events are handled by aggregating their Wang--Chang weighted increments at a
@@ -43,13 +49,14 @@
 #'   status = rep(c(1, 1, 0), 4),
 #'   arm = rep(c("A", "A", "B", "B"), each = 3)
 #' )
-#' zhao_rank_test(dat, group = "arm", episode = "episode")
+#' zhao_rank_test(dat, group = "arm", episode = "episode",
+#'                variance_method = "zhao_eq6")
 #'
 #' @export
 zhao_rank_test <- function(data, group, id = "id", gap = "gap",
                            status = "status", episode = NULL,
                            test = c("logrank", "gehan_breslow", "peto_prentice"),
-                           variance_method = c("pooled_risk", "zhao_eq6"),
+                           variance_method = c("zhao_eq6", "pooled_risk"),
                            alternative = c("two.sided", "greater", "less"),
                            tau = Inf) {
   test <- match.arg(test)
@@ -180,7 +187,8 @@ zhao_rank_test <- function(data, group, id = "id", gap = "gap",
 #'
 #' @examples
 #' \donttest{
-#' zhao_rank_simulation(n_sim = 100, n_per_group = 50, seed = 1)
+#' zhao_rank_simulation(n_sim = 100, n_per_group = 50,
+#'                      variance_method = "zhao_eq6", seed = 1)
 #' }
 #'
 #' @export
@@ -191,7 +199,7 @@ zhao_rank_simulation <- function(
     heterogeneity = NULL, followup = NULL, target_events = 200,
     time_resolution = NULL,
     alpha = 0.05, test = c("logrank", "gehan_breslow", "peto_prentice"),
-    variance_method = c("pooled_risk", "zhao_eq6"),
+    variance_method = c("zhao_eq6", "pooled_risk"),
     alternative = c("two.sided", "greater", "less"),
     treatment_time_multiplier = 1, seed = NULL) {
   scenario <- match.arg(scenario)

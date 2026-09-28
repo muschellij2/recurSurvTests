@@ -26,7 +26,8 @@ test_that("paper log-logistic histories have plausible event counts", {
   )
   expect_gt(sum(dat$status), 100)
   expect_lt(sum(dat$status), 2000)
-  fit <- zhao_rank_test(dat, "group", episode = "episode")
+  fit <- zhao_rank_test(dat, "group", episode = "episode",
+                        variance_method = "pooled_risk")
   expect_true(is.finite(fit$z))
 })
 
@@ -45,6 +46,21 @@ test_that("Zhao rank-test variance implementations are explicit", {
   expect_true(is.finite(literal$z))
   expect_equal(pooled$W, sum(pooled$subject_residuals$residual), tolerance = 1e-12)
   expect_false(isTRUE(all.equal(literal$variance, pooled$variance)))
+})
+
+test_that("Zhao rank test defaults to the printed Equation 6 variance", {
+  dat <- data.frame(
+    id = rep(1:4, each = 3), episode = rep(1:3, 4),
+    gap = c(2, 3, 4, 1, 4, 3, 2, 2, 5, 1, 3, 4),
+    status = rep(c(1, 1, 0), 4),
+    arm = rep(c("A", "A", "B", "B"), each = 3)
+  )
+  default <- zhao_rank_test(dat, "arm", episode = "episode")
+  eq6 <- zhao_rank_test(dat, "arm", episode = "episode",
+                        variance_method = "zhao_eq6")
+
+  expect_identical(default$variance_method, "zhao_eq6")
+  expect_equal(default$variance, eq6$variance)
 })
 
 test_that("Zhao null simulation has approximately nominal calibration", {

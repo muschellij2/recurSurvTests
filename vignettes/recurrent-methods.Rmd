@@ -112,13 +112,12 @@ distinct and reports the unresolved Equation 6 variance convention explicitly.
 ## Zhao extended rank tests and simulation checks
 
 `zhao_rank_test()` is separate from `wc_logrank()` and implements the extended
-LR, GB, and PP score construction in Zhao et al. (2020). Its
-default `variance_method = "pooled_risk"` has subject residuals that sum
-exactly to the score and is covered by the package's null simulation tests.
-`"zhao_eq6"` follows the group-specific denominator printed in Equation 6 as a
-sensitivity/reproduction implementation. This distinction is explicit because
-the paper's published numerical tables cannot be regenerated exactly without
-its original simulation software.
+LR, GB, and PP score construction in Zhao et al. (2020). Its default
+`variance_method = "zhao_eq6"` follows the group-specific denominator printed
+in Equation 6. The package-added `"pooled_risk"` sensitivity option uses a
+pooled risk-set denominator; its subject residuals sum exactly to the score.
+The pooled-risk validation results below are explicitly generated with that
+option and do not establish exact reproduction of the paper's tables.
 
 ```{r zhao-rank}
 zhao_rank_test(gaps, group = "arm", episode = "episode",
