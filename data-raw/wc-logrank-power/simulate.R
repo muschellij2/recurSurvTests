@@ -41,8 +41,16 @@ grid$cell_id <- seq_len(nrow(grid))
 cells <- grid[seq(task_id, nrow(grid), by = n_tasks), , drop = FALSE]
 
 started <- proc.time()[["elapsed"]]
-raw <- vector("list", nrow(cells) * n_sim)
+total_replicates <- nrow(cells) * n_sim
+raw <- vector("list", total_replicates)
 counter <- 0L
+progress <- utils::txtProgressBar(min = 0, max = total_replicates, style = 3)
+report_every <- max(1L, ceiling(total_replicates / 20L))
+format_duration <- function(seconds) {
+  seconds <- max(0, round(seconds))
+  sprintf("%02d:%02d:%02d", seconds %/% 3600L,
+          (seconds %% 3600L) %/% 60L, seconds %% 60L)
+}
 for (cell_index in seq_len(nrow(cells))) {
   cell <- cells[cell_index, ]
   for (replicate_id in seq_len(n_sim)) {
@@ -69,14 +77,22 @@ for (cell_index in seq_len(nrow(cells))) {
       p_rho0 = p0,
       p_rho1 = p1
     )
+    utils::setTxtProgressBar(progress, counter)
+    if (counter == 1L || counter %% report_every == 0L ||
+        counter == total_replicates) {
+      elapsed <- proc.time()[["elapsed"]] - started
+      remaining <- elapsed / counter * (total_replicates - counter)
+      message(sprintf(
+        "\nTask %d/%d: %d/%d replicates; current cell %d/%d (%s, %s heterogeneity, n/arm=%d, shift=%+.2f); elapsed %s; ETA %s",
+        task_id, n_tasks, counter, total_replicates, cell_index,
+        nrow(cells), cell$distribution, cell$heterogeneity,
+        cell$n_per_group, cell$log_time_shift,
+        format_duration(elapsed), format_duration(remaining)
+      ))
+    }
   }
-  elapsed <- proc.time()[["elapsed"]] - started
-  message(sprintf(
-    "Task %d/%d: finished cell %d/%d (%s, %s heterogeneity, n/arm=%d, shift=%+.2f); elapsed %.1f min",
-    task_id, n_tasks, cell_index, nrow(cells), cell$distribution,
-    cell$heterogeneity, cell$n_per_group, cell$log_time_shift, elapsed / 60
-  ))
 }
+close(progress)
 raw <- do.call(rbind, raw)
 outfile <- file.path(output_dir, sprintf("wc-logrank-power-task-%02d-of-%02d.rds", task_id, n_tasks))
 saveRDS(list(

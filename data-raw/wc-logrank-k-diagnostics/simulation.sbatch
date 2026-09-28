@@ -11,7 +11,7 @@ set +u
 source ~/.bash_profile
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR}"
-mkdir -p data-raw/wc-logrank-k-diagnostics/slurm-logs
+mkdir -p data-raw/slurm-logs
 export RUN_WC_K_DIAGNOSTIC=true
 export WC_K_DIAGNOSTIC_N_SIM=5000
 export WC_K_DIAGNOSTIC_TASK_ID="${SLURM_ARRAY_TASK_ID}"
