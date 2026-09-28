@@ -49,6 +49,14 @@ simulate_null <- function() {
 }
 
 raw <- vector("list", n_sim)
+progress <- utils::txtProgressBar(min = 0, max = n_sim, style = 3)
+started_at <- proc.time()[["elapsed"]]
+report_every <- max(1L, ceiling(n_sim / 20L))
+format_duration <- function(seconds) {
+  seconds <- max(0, round(seconds))
+  sprintf("%02d:%02d:%02d", seconds %/% 3600L,
+          (seconds %% 3600L) %/% 60L, seconds %% 60L)
+}
 for (replicate_id in seq_len(n_sim)) {
   set.seed(seed + task_id * 1000000L + replicate_id)
   fit <- wc_logrank_k(simulate_null(), group = "arm", episode = "episode")
@@ -66,7 +74,19 @@ for (replicate_id in seq_len(n_sim)) {
     n_B = arm_n[2], n_C = arm_n[3], replicate = replicate_id,
     chisq = fit$chisq, df = q, p_chisq = fit$p.value, p_f = p_f
   )
+  utils::setTxtProgressBar(progress, replicate_id)
+  if (replicate_id == 1L || replicate_id %% report_every == 0L ||
+      replicate_id == n_sim) {
+    elapsed <- proc.time()[["elapsed"]] - started_at
+    remaining <- elapsed / replicate_id * (n_sim - replicate_id)
+    message(sprintf(
+      "\nK-group diagnostic %s: %d/%d replicates; elapsed %s; ETA %s",
+      names(designs)[task_id], replicate_id, n_sim,
+      format_duration(elapsed), format_duration(remaining)
+    ))
+  }
 }
+close(progress)
 raw <- do.call(rbind, raw)
 outdir <- file.path("data-raw", "wc-logrank-k-diagnostics", "results")
 dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
