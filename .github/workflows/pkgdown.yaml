@@ -28,7 +28,13 @@ jobs:
         with:
           extra-packages: any::pkgdown, any::quarto, local::.
           needs: website
-          quarto-version: 1.9.36
+          # pkgdown renders the site's .qmd articles through the Quarto CLI.
+          # Install the current CLI explicitly; the R quarto package is only
+          # an interface to that executable.
+          install-quarto: true
+          quarto-version: release
+      - name: Check Quarto installation
+        run: quarto --version
       - name: Build site
         run: pkgdown::build_site_github_pages(dest_dir = "pkgdown", new_process = FALSE, install = FALSE)
         shell: Rscript {0}
