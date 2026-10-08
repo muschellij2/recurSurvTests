@@ -1,0 +1,103 @@
+Simulation register for recurSurvTests
+Updated: 2026-10-08 (filesystem snapshot; cluster jobs may change these counts)
+
+STATUS KEY: DONE = results present and summarized; PARTIAL = some output exists;
+READY = code/design exists but production run has not started; REVIEW = output
+exists but interpretation/reporting remains; PLANNED = code or benchmark needed.
+When a run finishes, record date, command/job ID, seed, code commit or source
+hash, expected and successful replicate counts, output path, and report path.
+Do not infer a completed simulation from a script alone. Never overwrite raw
+results when changing the estimator, generator, or variance convention.
+
+RCIF: Sivadasan--Sankaran 2023
+  DONE, exploratory stdout-only pilots (2026-10-07): quick simulation script
+    data-raw/ss-rcif-quick-simulation.R with 20 reps x n=50 x limit 3;
+    100 reps x n=100 x limit 3; and 2 reps x n=20 x limit 5. Each covered
+    fixed and uniform censoring and compared literal Eq.15/paper-right,
+    shared/paper-right, and shared/exponential-decrement. The 100-rep result
+    is described in docs/ss-rcif-validation.md; raw data were not saved.
+  DONE, durable smoke tests (2026-10-08): n=50 in all six tables. Table 1 has
+    10 reps; Tables 2-6 have 3 reps each. Seed per data set is 20231007 +
+    task_id*100000 + replicate; 0 fit failures. Raw RDS files are under
+    data-raw/ss-rcif-tables/results/; summary.csv (384 rows) and
+    run-inventory.csv are under data-raw/ss-rcif-tables/. These are software
+    smoke tests, not statistical validation. The other 18 sample-size cells
+    have no output yet; all 24 need production runs at 1000 reps each.
+  DONE, local timing-only runs (2026-10-08): 3 replicates each for Table 1
+    n=100,200,500; Table 2 n=500; Table 5 n=500; Table 6 n=500. Their RDS
+    files are in /tmp/ss-rcif-timing and may be removed by the system;
+    measured times are preserved in data-raw/ss-rcif-tables/local-timing.csv.
+    Observed seconds/rep at n=500: Table 1 4.88, Table 2 10.52, Table 5
+    14.63, Table 6 22.58. Extrapolating 50-to-500 scaling within each table
+    (and borrowing the same-censoring scaling for Tables 3-4) gives about
+    25 single-core hours for all 24 cells x 1000 reps. This is an uncertain
+    planning estimate from very short runs, not a production benchmark.
+  READY, full paired-comparison simulation: six table designs x n=50,100,
+    200,500 = 24 cells; 1000 independent data sets per cell. Same data set
+    is fit using literal Eq.15 with right and left survival, shared weights
+    with right survival, and shared weights with exact exponential decrement.
+    Generator: Z~Exp(1), cause hazards Z*lambda_l*2*t with lambda=(.1,.12),
+    censoring U(0,3), U(0,5), fixed 3, or fixed 5. Tables 1-2 weight by C;
+    Tables 3-4 weight by 1; Tables 5-6 have fixed C (equivalent to unit
+    weights). Evaluate t=0.2,...,1.6; report absolute signed bias and MSE
+    against F_l(t)=lambda_l/(.22)*(1-1/(1+.22*t^2)), MC standard errors,
+    missing fits, cause-singleton counts, and probability conservation.
+    Driver: data-raw/ss-rcif-table-simulation.R; Slurm array:
+    data-raw/ss-rcif-table-simulation.sbatch; aggregate:
+    data-raw/ss-rcif-table-aggregate.R. Submit only when compute budget and
+    cluster limits are known. Example: sbatch data-raw/ss-rcif-table-simulation.sbatch
+  PLANNED: transcribe published Tables 1-6 with a double check against the
+    PDF into a CSV with columns table,n,time,cause,abs_bias,mse; retain raw
+    printed values and compare cellwise with MC uncertainty. The aggregator
+    accepts this CSV as its optional third argument and writes
+    published-comparison.csv.
+    Investigate whether "Abs.bias" means |mean estimate - truth| (used by the
+    new driver) or mean absolute error; both are saved by the aggregator.
+    The paper does not specify the finite-sample side of Eq.18, so report
+    both literal-right and literal-left rather than calling either exact.
+    Do not claim table reproduction from matching selected cells alone.
+  PLANNED: larger-n trend and null calibration of ss_rcif_equal_causes_test;
+    published-estimator validation and METRON test calibration are separate.
+
+Zhao et al. 2020 rank tests
+  DONE: pooled-risk variance array, 120/120 task RDS under
+    data-raw/zhao-2020-table-simulations/. Report:
+    docs/zhao-validation/report.md (38/120 cells compatible with published
+    values by its exploratory MC criterion; all 72 power cells discrepant).
+  REVIEW: printed Eq.6 variance array, 120/120 task RDS under
+    data-raw/zhao-2020-table-simulations-zhao_eq6/. Generate its separate
+    report and run data-raw/zhao-variance-comparison.R; do not replace or mix
+    pooled-risk output. Determine whether Table 3 discrepancies narrow.
+    The generator and censoring differences and Table 2 scale ambiguity
+    remain unresolved even if the variance method agrees with a table.
+
+Wang--Chang / Luo--Huang recurrent gap-time tests
+  DONE: PSG-shaped K-group study, 20,000 replicates from 20 tasks; output
+    summarized by data-raw/wc-logrank-k-validation-aggregate.R. Null rejection
+    6.775% at nominal 5%; see docs/chat-context.md. The size distortion
+    needs explanation, not more repeats of this same design.
+  READY: K-group null diagnostic, four designs x 5000 replicates;
+    0/4 RDS files found under data-raw/wc-logrank-k-diagnostics/results/.
+    Driver and aggregator are in data-raw/wc-logrank-k-diagnostics/.
+  PARTIAL: two-group Luo--Huang power grid, 18/20 task RDS under
+    data-raw/wc-logrank-power/results/; missing tasks 11 and 12. Each task
+    covers its share of 80 design cells at 5000 reps/cell. Complete missing
+    tasks and aggregate size/power with MC intervals. This is application-
+    specific validation, not a published Luo--Huang table reproduction.
+
+PSG-shaped application simulation
+  DONE: pooled-risk study, 10,000 reps per each of six scenarios, with
+    summary in data-raw/psg-validation-results.csv and raw output in
+    data-raw/psg-validation-results.rds. Preserve the pooled-risk version.
+  PARTIAL: Zhao Eq.6 sensitivity, 5985/6000 task RDS under
+    data-raw/psg-validation-results-zhao_eq6/. Missing task IDs as of this
+    snapshot: 45, 617, 629, 630, 1074, 1460, 2080, 2566, 2567, 2702,
+    3618, 3952, 4503, 4504, 4726. Complete and aggregate separately.
+
+Curve confidence intervals
+  REVIEW: pointwise and simultaneous coverage CSV summaries exist at
+    data-raw/curve-ci-pointwise-coverage.csv and
+    data-raw/curve-ci-simultaneous-coverage.csv. Audit the run settings,
+    replicate count, raw output, and apparent all-1 coverage values before
+    treating this as validation; the driver is
+    data-raw/curve-ci-coverage-simulation.R.

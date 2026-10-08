@@ -17,7 +17,8 @@ ss_rcif_equal_causes_test(
   tau = Inf,
   weight = NULL,
   B = 999,
-  seed = NULL
+  seed = NULL,
+  cif_method = c("paper", "exponential_decrement")
 )
 }
 \arguments{
@@ -51,6 +52,8 @@ because bootstrap event-time grids can vary.}
 required; 999 or more are recommended for analysis.}
 
 \item{seed}{Optional random-number seed.}
+
+\item{cif_method}{Passed to \code{\link[=ss_rcif]{ss_rcif()}}.}
 }
 \value{
 A list containing the observed integrated contrasts, Helmert contrast

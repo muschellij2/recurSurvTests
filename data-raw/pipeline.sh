@@ -76,3 +76,8 @@ fi
 if [[ "${RUN_MANUSCRIPT_RENDER:-0}" == "1" ]]; then
   quarto render vignettes/jss-manuscript.qmd
 fi
+
+
+sbatch --export=ALL,PSG_ZHAO_VARIANCE_METHOD=zhao_eq6 --array=1-6000%100 data-raw/psg-validation-simulations.sbatch
+sbatch --export=ALL,PSG_ZHAO_VARIANCE_METHOD=zhao_eq6 --array=45,617,629,630,1074,1460,2080,2566,2567,2702,3618,3952,4503,4504,4726 data-raw/psg-validation-simulations.sbatch
+

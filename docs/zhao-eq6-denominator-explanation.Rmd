@@ -1,0 +1,82 @@
+---
+title: "How the Subject-Specific Denominator Enters Equation 6"
+subtitle: "A note on the event contribution in Zhao et al."
+output:
+  pdf_document:
+    latex_engine: xelatex
+    number_sections: false
+geometry: margin=1in
+fontsize: 10pt
+---
+
+## The two delta symbols
+
+Equation 6 weights each event contribution by the number of usable gaps for the subject who generated that event. The notation can be confusing because the equation uses both an uppercase and a lowercase delta:
+
+- \(\Delta_{ij}\) is the event indicator. It is the quantity divided by \(m_i^*\).
+- \(\delta_i\) is the group indicator. It stays unchanged.
+
+Thus, the substitution is \(\Delta_{ij} \mapsto \Delta_{ij}/m_i^*\), not \(\delta_i \mapsto \delta_i/m_i^*\). Equation 6 uses \(m_i^*\), the paper's adjusted count of usable gaps, rather than the unadjusted \(m_i\).
+
+## Applying the substitution to the second term
+
+Write the event-level part of the second term in Equation 5 as
+
+\[
+q_{i'j'} = \Delta_{i'j'} L(\tilde t_{i'j'})
+\left\{
+  \delta_{i'} -
+  \frac{Y_1(\tilde t_{i'j'})}{Y(\tilde t_{i'j'})}
+\right\}.
+\]
+
+The second term is then
+
+\[
+\sum_{i'=1}^{n}\sum_{j'=1}^{m_{i'}}
+q_{i'j'}\,
+\frac{Y_{g_i i}(\tilde t_{i'j'})}{Y(\tilde t_{i'j'})}.
+\]
+
+In Equation 6, the event-level quantity is replaced by its Wang--Chang weighted version and divided by the gap count of its source subject:
+
+\[
+\sum_{i'=1}^{n}\sum_{j'=1}^{m_{i'}}
+\frac{q^*_{i'j'}}{m_{i'}^*}\,
+\frac{Y^*_{g_i i}(\tilde t_{i'j'})}{Y^*(\tilde t_{i'j'})},
+\]
+
+where
+
+\[
+q^*_{i'j'} = \Delta_{i'j'} L^*(\tilde t_{i'j'})
+\left\{
+  \delta_{i'} -
+  \frac{Y_1^*(\tilde t_{i'j'})}{Y^*(\tilde t_{i'j'})}
+\right\}.
+\]
+
+\newpage
+
+For any fixed subject \(i'\), the value \(m_{i'}^*\) is constant over that subject's event index \(j'\). So that subject's contribution can be written as
+
+\[
+\frac{1}{m_{i'}^*}
+\sum_{j'=1}^{m_{i'}}
+q^*_{i'j'}\,
+\frac{Y^*_{g_i i}(\tilde t_{i'j'})}{Y^*(\tilde t_{i'j'})}.
+\]
+
+This is the key step: \(1/m_{i'}^*\) is a denominator for each source subject's inner sum. Since different subjects can have different values of \(m_{i'}^*\), there is no single denominator to pull in front of the full double sum.
+
+## Why the first term looks different
+
+The first term is indexed over events from one focal subject \(i\). Its factor \(1/m_i^*\) is therefore common to that entire sum over \(j\):
+
+\[
+\frac{1}{m_i^*}\sum_{j=1}^{m_i}(\text{weighted event contribution for subject }i).
+\]
+
+In the second term, the outer sum runs over many source subjects \(i'\), each with its own denominator \(m_{i'}^*\). You can factor the denominator outside each subject's inner sum, but not outside the sum over subjects.
+
+The package represents these subject-specific weights inside the weighted risk and event increments, so the factor \(1/m_i^*\) may not appear as a separate denominator in every later expression.

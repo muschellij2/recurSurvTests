@@ -39,4 +39,4 @@ export ZHAO_CHUNK_SIZE=100
 
 # Use the R installation configured on the cluster. If your site requires a
 # module, add its `module load R/...` command above this line.
-Rscript data-raw/zhao-2020-table-simulations.R
+R --no-save --no-restore < data-raw/zhao-2020-table-simulations.R

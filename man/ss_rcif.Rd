@@ -14,7 +14,8 @@ ss_rcif(
   subject_weight = c("one", "followup"),
   cause_weighting = c("shared", "literal_eq15"),
   survival_side = c("right", "left"),
-  tau = Inf
+  tau = Inf,
+  cif_method = c("paper", "exponential_decrement")
 )
 }
 \arguments{
@@ -42,9 +43,14 @@ processes, or \code{"literal_eq15"}, which reproduces the printed cause-specific
 denominator in Equation 15 of the 2023 paper.}
 
 \item{survival_side}{Whether RCIF increments use the right-continuous
-(\code{"right"}) or left-limit (\code{"left"}) survival estimate at each event time.}
+(\code{"right"}) or left-limit (\code{"left"}) survival estimate at each event time
+when \code{cif_method = "paper"}.}
 
 \item{tau}{Optional upper truncation time.}
+
+\item{cif_method}{\code{"paper"} uses the discrete version of Equation 18 with
+\code{survival_side}. \code{"exponential_decrement"} allocates the exact decrement
+in exponential survival among causes in proportion to their hazard jumps.}
 }
 \value{
 A list containing the pooled recurrent survival process, cause-specific
@@ -63,6 +69,9 @@ Taken literally, those cause-specific increments need not sum to the pooled
 event process. Therefore the default is \code{cause_weighting = "shared"}, while
 \code{"literal_eq15"} is provided for literal reproduction and sensitivity
 analysis.
+The \code{"exponential_decrement"} option conserves probability exactly when
+\code{cause_weighting = "shared"}: the cause-specific CIFs sum to \code{1 - S}.
+It is a finite-sample modification, not Equation 18 as printed.
 }
 \examples{
 dat <- data.frame(

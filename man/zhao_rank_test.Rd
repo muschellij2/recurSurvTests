@@ -38,10 +38,11 @@ score.}
 \item{tau}{Optional upper truncation time.}
 }
 \value{
-A list with the unstandardized score \code{W}, robust variance \code{variance},
-standard error, normal score \code{z}, p-value, subject residuals, and event-time
-details. \code{group1} is the treatment group, determined by second appearance
-among subjects; a positive score corresponds to more events in \code{group1}.
+An object of class \code{zhao_rank_test}, containing the unstandardized
+score \code{W}, robust variance \code{variance}, standard error, normal score \code{z},
+p-value, subject residuals, and event-time details. \code{group1} is the treatment
+group, determined by second appearance among subjects; a positive score
+corresponds to more events in \code{group1}.
 }
 \description{
 Tests equality of two Wang--Chang marginal recurrent gap-time survival

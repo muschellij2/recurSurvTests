@@ -20,7 +20,11 @@
 #'   processes, or `"literal_eq15"`, which reproduces the printed cause-specific
 #'   denominator in Equation 15 of the 2023 paper.
 #' @param survival_side Whether RCIF increments use the right-continuous
-#'   (`"right"`) or left-limit (`"left"`) survival estimate at each event time.
+#'   (`"right"`) or left-limit (`"left"`) survival estimate at each event time
+#'   when `cif_method = "paper"`.
+#' @param cif_method `"paper"` uses the discrete version of Equation 18 with
+#'   `survival_side`. `"exponential_decrement"` allocates the exact decrement
+#'   in exponential survival among causes in proportion to their hazard jumps.
 #' @param tau Optional upper truncation time.
 #'
 #' @return A list containing the pooled recurrent survival process, cause-specific
@@ -34,6 +38,9 @@
 #' event process. Therefore the default is `cause_weighting = "shared"`, while
 #' `"literal_eq15"` is provided for literal reproduction and sensitivity
 #' analysis.
+#' The `"exponential_decrement"` option conserves probability exactly when
+#' `cause_weighting = "shared"`: the cause-specific CIFs sum to `1 - S`.
+#' It is a finite-sample modification, not Equation 18 as printed.
 #'
 #' @references
 #' Sivadasan SM, Sankaran PG (2023). Nonparametric estimation of cumulative
@@ -57,13 +64,18 @@ ss_rcif <- function(data, id = "id", gap = "gap", status = "status",
                     cause = "cause", episode = NULL,
                     subject_weight = c("one", "followup"),
                     cause_weighting = c("shared", "literal_eq15"),
-                    survival_side = c("right", "left"), tau = Inf) {
+                    survival_side = c("right", "left"), tau = Inf,
+                    cif_method = c("paper", "exponential_decrement")) {
   cause_weighting <- match.arg(cause_weighting)
   survival_side <- match.arg(survival_side)
+  cif_method <- match.arg(cif_method)
 
   d <- .validate_gap_data(data, id, gap, status, episode)
   if (!cause %in% names(d)) {
     stop("Missing cause column: ", cause)
+  }
+  if (anyNA(d[[cause]][d[[status]] == 1])) {
+    stop("cause must be non-missing on completed-event rows")
   }
 
   levels <- unique(d[[cause]][d[[status]] == 1 & !is.na(d[[cause]])])
@@ -161,7 +173,11 @@ ss_rcif <- function(data, id = "id", gap = "gap", status = "status",
     key <- as.character(lev)
     dGl <- colSums(dGl_i[[key]])
     dL <- ifelse(risk > 0, dGl / risk, 0)
-    dF <- S_use * dL
+    dF <- if (cif_method == "paper") {
+      S_use * dL
+    } else {
+      S_left * (-expm1(-dLambda)) * ifelse(dLambda > 0, dL / dLambda, 0)
+    }
     F <- cumsum(dF)
 
     cause_curves[[key]] <- list(
@@ -186,12 +202,16 @@ ss_rcif <- function(data, id = "id", gap = "gap", status = "status",
     method = "Sivadasan/Sankaran RCIF",
     cause_weighting = cause_weighting,
     survival_side = survival_side,
+    cif_method = cif_method,
     subject_weight = sw_name,
     causes = levels,
     n_subjects = n,
     curve = out,
     cause_curves = cause_curves,
     additivity_max_abs_dG = add_err,
+    probability_conservation_max_abs = max(abs(
+      Reduce(`+`, lapply(cause_curves, `[[`, "F")) - out$F_overall
+    )),
     warning = if (cause_weighting == "literal_eq15") {
       paste(
         "literal Eq.(15) cause weighting generally does not add to",

@@ -15,6 +15,7 @@
 #' @param subject_weight Passed to [ss_rcif()].
 #' @param cause_weighting Passed to [ss_rcif()].
 #' @param survival_side Passed to [ss_rcif()].
+#' @param cif_method Passed to [ss_rcif()].
 #' @param tau Optional upper truncation time.
 #' @param weight Either `NULL` for unit weights, a function of the fitted RCIF
 #'   curve returning one weight per event time, or a numeric vector with one
@@ -72,13 +73,15 @@ ss_rcif_equal_causes_test <- function(
     tau = Inf,
     weight = NULL,
     B = 999,
-    seed = NULL) {
+    seed = NULL,
+    cif_method = c("paper", "exponential_decrement")) {
   if (B < 20) {
     stop("Use B >= 20; B=999 or more is recommended")
   }
 
   cause_weighting <- match.arg(cause_weighting)
   survival_side <- match.arg(survival_side)
+  cif_method <- match.arg(cif_method)
 
   d <- .validate_gap_data(data, id, gap, status, episode)
   if (!cause %in% names(d)) {
@@ -95,7 +98,8 @@ ss_rcif_equal_causes_test <- function(
     subject_weight = subject_weight,
     cause_weighting = cause_weighting,
     survival_side = survival_side,
-    tau = tau
+    tau = tau,
+    cif_method = cif_method
   )
 
   v <- .integrated_rcif_contrast(fit, weight)
@@ -124,7 +128,8 @@ ss_rcif_equal_causes_test <- function(
         subject_weight = subject_weight,
         cause_weighting = cause_weighting,
         survival_side = survival_side,
-        tau = tau
+        tau = tau,
+        cif_method = cif_method
       )
 
       if (!setequal(as.character(fb$causes), as.character(levels))) {

@@ -18,10 +18,11 @@
 #' @param alternative Alternative for the normal-score p-value.
 #' @param tau Optional upper truncation time.
 #'
-#' @return A list with the unstandardized score `W`, robust variance `variance`,
-#' standard error, normal score `z`, p-value, subject residuals, and event-time
-#' details. `group1` is the treatment group, determined by second appearance
-#' among subjects; a positive score corresponds to more events in `group1`.
+#' @return An object of class `zhao_rank_test`, containing the unstandardized
+#' score `W`, robust variance `variance`, standard error, normal score `z`,
+#' p-value, subject residuals, and event-time details. `group1` is the treatment
+#' group, determined by second appearance among subjects; a positive score
+#' corresponds to more events in `group1`.
 #'
 #' @details
 #' The default variance implementation follows the printed group-specific
@@ -117,7 +118,7 @@ zhao_rank_test <- function(data, group, id = "id", gap = "gap",
     less = stats::pnorm(z)
   )
 
-  list(
+  structure(list(
     method = paste0("Zhao et al. extended ", test, " rank test"),
     test = test,
     variance_method = variance_method,
@@ -141,6 +142,64 @@ zhao_rank_test <- function(data, group, id = "id", gap = "gap",
       time = times, risk = risk, risk_group1 = risk1, dN = dN,
       dLambda = d_lambda, survival = survival, weight = weight
     )
+  ), class = "zhao_rank_test")
+}
+
+#' Print a Zhao recurrent gap-time rank test
+#'
+#' Prints the test method, alternative, group comparison, test statistic,
+#' estimated standard error, and p-value in the style of base R hypothesis
+#' test output.
+#'
+#' @param x An object returned by [zhao_rank_test()].
+#' @param digits Number of significant digits to display.
+#' @param ... Further arguments, currently ignored.
+#'
+#' @export
+print.zhao_rank_test <- function(x, digits = max(3L, getOption("digits") - 3L), ...) {
+  cat("\n\t", x$method, "\n\n", sep = "")
+  cat("data:  recurrent gap times in", x$group1, "and", x$group0, "\n")
+  cat(x$test, "score =", format(x$W, digits = digits),
+      ", z =", format(x$z, digits = digits),
+      ", p-value =", format.pval(x$p.value, digits = digits), "\n")
+  cat("alternative hypothesis:", x$alternative, "\n")
+  cat("sample estimates:\n")
+  cat("score (W) ", format(x$W, digits = digits),
+      "\nstandard error ", format(x$se, digits = digits),
+      "\nvariance method ", x$variance_method, "\n\n", sep = "")
+  invisible(x)
+}
+
+#' Tidy a Zhao recurrent gap-time rank test
+#'
+#' Returns a one-row data frame with the test result. This method follows the
+#' `broom::tidy()` convention and is registered for use with `broom::tidy()`.
+#'
+#' @param x An object returned by [zhao_rank_test()].
+#' @param ... Further arguments, currently ignored.
+#'
+#' @return A one-row data frame with `estimate`, `statistic`, `p.value`,
+#' `parameter`, `conf.low`, `conf.high`, `method`, `alternative`, and Zhao
+#' specific columns `variance`, `variance_method`, `group0`, `group1`, and
+#' `n_subjects`.
+#'
+#' @exportS3Method broom::tidy
+tidy.zhao_rank_test <- function(x, ...) {
+  data.frame(
+    estimate = x$W,
+    statistic = x$z,
+    p.value = x$p.value,
+    parameter = NA_real_,
+    conf.low = NA_real_,
+    conf.high = NA_real_,
+    method = x$method,
+    alternative = x$alternative,
+    variance = x$variance,
+    variance_method = x$variance_method,
+    group0 = x$group0,
+    group1 = x$group1,
+    n_subjects = x$n_subjects,
+    stringsAsFactors = FALSE
   )
 }
 
